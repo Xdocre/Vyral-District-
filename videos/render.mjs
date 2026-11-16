@@ -7,7 +7,8 @@
  */
 import http from "node:http";
 import { spawn } from "node:child_process";
-import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { readFile, mkdir, writeFile, rename, copyFile, unlink } from "node:fs/promises";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -59,13 +60,14 @@ for (const video of spec.videos) {
     }
 
     const file = path.join(outDir, `${video.id}-${fname}.mp4`);
+    const tmp = path.join(os.tmpdir(), `vd-${process.pid}-${video.id}-${fname}.mp4`); // finished files only appear in videos/out
     const ff = spawn("ffmpeg", [
       "-y", "-loglevel", "error",
       "-f", "image2pipe", "-framerate", String(spec.fps), "-c:v", "mjpeg", "-i", "-",
       "-i", path.join(root, "videos", "build", video.id, "audio.wav"),
       "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-pix_fmt", "yuv420p", "-profile:v", "high",
       "-c:a", "aac", "-b:a", "160k", "-ar", "48000",
-      "-movflags", "+faststart", "-shortest", file,
+      "-movflags", "+faststart", "-shortest", tmp,
     ], { stdio: ["pipe", "inherit", "inherit"] });
     const frames = Math.ceil(tl.duration * spec.fps);
     const t0 = Date.now();
@@ -76,6 +78,7 @@ for (const video of spec.videos) {
     }
     ff.stdin.end();
     await new Promise((r, j) => ff.on("close", (c) => (c ? j(new Error("ffmpeg " + c)) : r())));
+    try { await rename(tmp, file); } catch { await copyFile(tmp, file); await unlink(tmp); }
     // poster frame (CTA end card) for thumbnails / website
     const poster = await page.evaluate(([t, CANVAS_ID]) => { window.drawFrame(t); return document.getElementById(CANVAS_ID).toDataURL("image/jpeg", 0.85).split(",")[1]; }, [tl.duration - 0.2, CANVAS]);
     await writeFile(path.join(outDir, `${video.id}-${fname}.jpg`), Buffer.from(poster, "base64"));
