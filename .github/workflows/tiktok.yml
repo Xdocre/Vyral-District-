@@ -1,0 +1,48 @@
+name: Vyral District TikTok posts
+
+# Peak TikTok engagement windows for a US audience (Eastern Time):
+#   ~7:45am  (morning scroll, before work/school)
+#   ~12:15pm (lunch break)
+#   ~7:40pm  (evening prime time, highest daily usage)
+# Cron is UTC. These match Eastern *Standard* Time (Nov–Mar). During daylight
+# time (Mar–Nov) subtract 1 hour from each UTC hour to keep the same local time.
+on:
+  schedule:
+    - cron: "44 12 * * *"
+    - cron: "13 17 * * *"
+    - cron: "38 0 * * *"
+  workflow_dispatch:
+    inputs:
+      video_id:
+        description: "Post a specific video (e.g. pv-03). Blank = next in line."
+        required: false
+
+permissions:
+  contents: write
+
+concurrency: tiktok-post
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Post next video to TikTok
+        env:
+          POST_LIVE: ${{ vars.POST_LIVE }}
+          TIKTOK_PRIVACY: ${{ vars.TIKTOK_PRIVACY }}
+          ALLOW_REPEATS: ${{ vars.TIKTOK_ALLOW_REPEATS }}
+          VIDEO_ID: ${{ github.event.inputs.video_id }}
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
+        run: node autopost/tiktok.mjs
+      - name: Save post history
+        run: |
+          git config user.name "vyral-district-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add autopost/tiktok-state.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "tiktok: record published video" && git pull --rebase && git push)

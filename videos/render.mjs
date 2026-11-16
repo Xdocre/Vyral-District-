@@ -40,6 +40,7 @@ for (const video of spec.videos) {
   const tl = JSON.parse(await readFile(path.join(root, "videos", "build", video.id, "timeline.json"), "utf8"));
   for (const [fname, format] of Object.entries(spec.formats)) {
     if (FORMAT && fname !== FORMAT) continue;
+    if (video.formats && !video.formats.includes(fname)) continue;
     const page = await browser.newPage({ viewport: { width: format.w, height: format.h }, deviceScaleFactor: 1 });
     await page.goto(`http://localhost:${port}/videos/engine.html`);
     await page.evaluate((cfg) => window.setup(cfg), { format, timeline: tl, video, brand });

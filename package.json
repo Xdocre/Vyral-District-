@@ -6,7 +6,10 @@
     "serve": "npx --yes serve .",
     "render": "node autopost/render.mjs",
     "post": "node autopost/post.mjs",
-    "post:live": "POST_LIVE=true node autopost/post.mjs"
+    "post:live": "POST_LIVE=true node autopost/post.mjs",
+    "tiktok": "node autopost/tiktok.mjs",
+    "tiktok:auth": "node autopost/tiktok-auth.mjs",
+    "videos:render": "node videos/render.mjs"
   },
   "devDependencies": {
     "playwright": "^1.48.0"
