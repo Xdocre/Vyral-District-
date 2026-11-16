@@ -61,7 +61,8 @@ h1 .grad, h2 .grad { background: var(--grad); -webkit-background-clip: text; bac
 .profile__bio { font-size: 14px; color: var(--muted); }
 .profile__bio strong { color: var(--text); }
 .socials { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.socials a { font-size: 13px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; }
+.socials a { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--smoke-lt); }
+.socials a:hover { color: #fff; }
 .socials a:hover { border-color: var(--pink); }
 
 /* sections */

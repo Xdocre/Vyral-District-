@@ -103,7 +103,7 @@ def main():
             samples = np.trim_zeros(np.asarray(samples), "fb")
             dur = len(samples) / SR
             is_last = i == len(video["scenes"]) - 1
-            length = max(dur + gap, 1.6) + (1.6 if is_last else 0)
+            length = max(dur + gap, sc.get("min", 1.6)) + (1.6 if is_last else 0)
             voice_parts.append((t, samples))
             scenes.append({**sc, "start": round(t - (lead_in if i == 0 else 0), 3), "voStart": round(t, 3), "voEnd": round(t + dur, 3), "end": round(t + length, 3)})
             t += length

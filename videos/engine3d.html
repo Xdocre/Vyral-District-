@@ -17,6 +17,7 @@ import { FontLoader } from "./vendor/FontLoader.js";
 import { TextGeometry } from "./vendor/TextGeometry.js";
 import { RoundedBoxGeometry } from "./vendor/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "./vendor/RoomEnvironment.js";
+import { SVGLoader } from "./vendor/SVGLoader.js";
 
 const GREY = 0x9b9b9b, WHITE = 0xf2f2f2, DARK = 0x141414;
 const OVERLAY_FONT = 'Inter, "Helvetica Neue", Arial, sans-serif';
@@ -28,7 +29,7 @@ const eBack = (k) => { k = clamp(k); const c = 1.6; return 1 + (c + 1) * Math.po
 const rand = (i) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 const ascii = (s) => s.replace(/[’‘]/g, "'").replace(/[“”]/g, '"').replace(/…/g, "...").replace(/[→]/g, "").replace(/[^\x20-\x7E]/g, "").replace(/\s+/g, " ").trim();
 
-let W, H, TL, VIDEO, BRAND, font, renderer, scene, camera, out, octx, glCanvas;
+let ICONS, W, H, TL, VIDEO, BRAND, font, renderer, scene, camera, out, octx, glCanvas;
 let VIEW_W, VIEW_H; // visible world size at z=0
 const CAM_Z = 22, FOV = 32;
 let world, ring1, ring2, dust, sceneGroups = [];
@@ -337,6 +338,89 @@ const BUILD = {
       },
     };
   },
+  socials(sc) {
+    // Platform logos as 3D coins with follower counts climbing (illustrative numbers).
+    const a = area(), group = new THREE.Group();
+    const P = sc.platforms;
+    const rows = H > W; // vertical: one row per platform; square/landscape: columns
+    const n = P.length;
+    const title = textBlock(sc.title || "Followers going *up.*", { maxSize: Math.min(a.w * 0.085, 1.1), maxW: a.w, maxLines: 2 });
+    const AH = rows ? VIEW_H * 0.64 : a.h;
+    group.add(title.group);
+    const items = P.map((p, i) => {
+      const it = new THREE.Group();
+      const cellH = rows ? (AH - title.height * 1.8) / n : a.h * 0.55;
+      const r = rows ? cellH * 0.4 : Math.min(a.w / n * 0.34, a.h * 0.15);
+      // coin
+      const coin = new THREE.Group();
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(r, r, r * 0.28, 64), mats.slab); disc.rotation.x = Math.PI / 2; coin.add(disc);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(r, r * 0.05, 10, 64), mats.ring); rim.position.z = r * 0.14; coin.add(rim);
+      // logo from SVG path, extruded
+      const svg = new SVGLoader().parse(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${ICONS[p.name].path}"/></svg>`);
+      const shapes = svg.paths.flatMap((sp) => SVGLoader.createShapes(sp));
+      const lg = new THREE.ExtrudeGeometry(shapes, { depth: 2.2, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.2, bevelSegments: 1, curveSegments: 8 });
+      lg.translate(-12, -12, 0); lg.scale(1, -1, -1); lg.translate(0, 0, 2.5); // svg y-down → y-up (double flip keeps faces outward), centred
+      const logo = new THREE.Mesh(lg, [mats.white, mats.whiteSide]);
+      const ls = (r * 1.15) / 24; logo.scale.set(ls, ls, ls); logo.position.z = r * 0.14;
+      coin.add(logo);
+      it.add(coin);
+      // counter + name
+      const cnt = new THREE.Group(); it.add(cnt);
+      const nameSize = rows ? r * 0.38 : r * 0.34, numSize = rows ? r * 0.95 : r * 0.6;
+      const L = rows ? -(r * 2.5 + numSize * 3.9) / 2 : 0; // centre the row block
+      const name = new THREE.Mesh(wordGeo(ascii(p.name)), [mats.grey, mats.side]); name.scale.setScalar(nameSize);
+      it.add(name);
+      const arrow = new THREE.Mesh(new THREE.ConeGeometry(numSize * 0.22, numSize * 0.45, 24), mats.white); it.add(arrow);
+      if (rows) {
+        coin.position.x = L + r;
+        cnt.position.set(L + r * 2.5, -numSize * 0.55, 0);
+        name.position.set(L + r * 2.5, numSize * 0.55, 0);
+        it.position.y = AH / 2 - title.height * 1.8 - cellH * (i + 0.5);
+      } else {
+        const cw = a.w / n;
+        it.position.x = -a.w / 2 + cw * (i + 0.5);
+        coin.position.y = r * 0.9;
+        cnt.position.set(0, -r * 0.75, 0);
+        name.position.set(-gw(name.geometry) * nameSize / 2, -r * 0.75 - numSize * 1.0, 0);
+        it.position.y = -title.height * 0.4;
+      }
+      return { it, coin, cnt, arrow, p, r, numSize, rows, cur: null, cw: rows ? a.w : (a.w / n) * 0.66 };
+    });
+    items.forEach((x) => group.add(x.it));
+    title.group.position.y = rows ? AH / 2 - title.height / 2 : a.h * 0.34;
+    group.position.set(a.x, rows ? VIEW_H * 0.07 : a.y - a.h * 0.04, 0);
+    const fmt = (v) => (v >= 1e6 ? (v / 1e6).toFixed(1) + "M" : v >= 1e5 ? Math.round(v / 1e3) + "K" : v >= 1e3 ? (v / 1e3).toFixed(1) + "K" : String(Math.round(v)));
+    return {
+      group,
+      update(lt) {
+        animateWords(title.words, lt, { stagger: 0.05 });
+        items.forEach((x, i) => {
+          const k = (lt - 0.15 - i * 0.14) / 0.6;
+          x.it.visible = k > 0;
+          x.it.scale.setScalar(Math.max(0.001, eBack(k)));
+          x.coin.rotation.y = lerp(Math.PI * 2, 0, eOut(k)) + Math.sin(lt * 1.2 + i) * 0.25;
+          // count up (eased), digits rebuilt only when the label changes
+          const ck = eOut((lt - 0.5 - i * 0.12) / 2.4);
+          const label = "+" + fmt(lerp(x.p.from, x.p.to, ck));
+          if (label !== x.cur) {
+            x.cnt.clear();
+            const m = new THREE.Mesh(wordGeo(label), [mats.white, mats.whiteSide]);
+            const ns = x.rows ? x.numSize : Math.min(x.numSize, x.cw / gw(wordGeo("+125K")));
+            m.scale.setScalar(ns);
+            m.position.x = x.rows ? 0 : -gw(m.geometry) * ns / 2;
+            x.cnt.add(m); x.cur = label;
+            const wNum = gw(m.geometry) * ns;
+            x.arrow.position.x = x.cnt.position.x + (x.rows ? wNum + x.numSize * 0.4 : wNum / 2 + ns * 0.35);
+            x.arrow.scale.setScalar(ns / x.numSize);
+          }
+          x.arrow.position.y = x.cnt.position.y + x.numSize * 0.4 + Math.abs(Math.sin(lt * 4 + i)) * x.numSize * 0.15;
+          x.arrow.visible = ck > 0.05;
+        });
+        group.rotation.y = (H > W ? 0.1 : -0.08) + Math.sin(lt * 0.5) * 0.08;
+        group.rotation.x = 0.04;
+      },
+    };
+  },
   cta(sc) {
     const a = area(), group = new THREE.Group();
     // Logo lockup: thin ring + stacked VYRAL / DISTRICT, left aligned, like the brand mark
@@ -426,6 +510,10 @@ function overlay(t, sc, lt) {
   const prog = clamp(t / TL.duration);
   octx.fillStyle = "rgba(255,255,255,.14)"; octx.fillRect(pad, topY + 22 * S, W - pad * 2, 4 * S);
   octx.fillStyle = "#bdbdbd"; octx.fillRect(pad, topY + 22 * S, (W - pad * 2) * prog, 4 * S);
+  if (sc.kind === "socials") {
+    octx.font = `500 ${24 * S}px ${OVERLAY_FONT}`; octx.fillStyle = "rgba(160,160,160,.75)"; octx.textAlign = "center";
+    octx.fillText("Illustrative example. Results vary.", W / 2, H > W ? H * 0.775 : H - pad * 0.8); octx.textAlign = "left";
+  }
   if (sc.kind === "cta") {
     const a = clamp((lt - 1.1) / 0.4);
     octx.globalAlpha = a; octx.textAlign = "center";
@@ -452,6 +540,7 @@ window.setup = async (cfg) => {
   out = document.getElementById("out"); out.width = W; out.height = H; octx = out.getContext("2d");
   await document.fonts.load(`700 40px Inter`).catch(() => {});
   font = await new Promise((res, rej) => new FontLoader().load("./vendor/helvetiker_bold.typeface.json", res, undefined, rej));
+  ICONS = await (await fetch("./vendor/social-icons.json")).json();
   renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
   renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(1); renderer.setSize(W, H, false);

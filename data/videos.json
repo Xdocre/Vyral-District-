@@ -84,6 +84,39 @@
           "vo": "Real campaigns target the right people, test what works, and scale the winners."
         },
         {
+          "kind": "socials",
+          "title": "Followers going *up.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "Instagram. TikTok. Twitch. Facebook. X. Watch every platform grow."
+        },
+        {
           "kind": "cta",
           "cta": "Get a real ad plan",
           "vo": "Vyral District. Get a real ad plan today."
@@ -139,6 +172,39 @@
           "vo": "Then put your budget behind what actually works."
         },
         {
+          "kind": "socials",
+          "title": "Every platform. *Growing.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "More followers on Instagram, TikTok, Twitch, Facebook, and X."
+        },
+        {
           "kind": "cta",
           "cta": "Launch your first campaign",
           "vo": "Launch your first campaign with Vyral District."
@@ -185,6 +251,39 @@
           "vo": "Content that builds fans. Ads that scale your reach. One growth plan."
         },
         {
+          "kind": "socials",
+          "title": "Watch the numbers *climb.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "Every platform. Every follower count. Going up."
+        },
+        {
           "kind": "cta",
           "cta": "Book a strategy call",
           "vo": "Book your strategy call with Vyral District."
@@ -224,6 +323,39 @@
             "+ Lookalikes"
           ],
           "vo": "Spark ads. Retargeting. Lookalike audiences. Your winners, in front of the right people."
+        },
+        {
+          "kind": "socials",
+          "title": "Followers going *up.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "Instagram. TikTok. Twitch. Facebook. X. Watch every platform grow."
         },
         {
           "kind": "cta",
@@ -278,6 +410,39 @@
           "vo": "Three. Scale what wins."
         },
         {
+          "kind": "socials",
+          "title": "Every platform. *Growing.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "More followers on Instagram, TikTok, Twitch, Facebook, and X."
+        },
+        {
           "kind": "cta",
           "cta": "Join the District",
           "vo": "That's the system. Join the District."
@@ -320,6 +485,39 @@
           "vo": "Vyral District builds content systems that turn scrollers into followers."
         },
         {
+          "kind": "socials",
+          "title": "Watch the numbers *climb.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "Every platform. Every follower count. Going up."
+        },
+        {
           "kind": "cta",
           "cta": "Get your free growth audit",
           "vo": "Get your free growth audit. Vyral District."
@@ -357,6 +555,39 @@
           "vo": "We write hooks that stop thumbs."
         },
         {
+          "kind": "socials",
+          "title": "Followers going *up.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "Instagram. TikTok. Twitch. Facebook. X. Watch every platform grow."
+        },
+        {
           "kind": "cta",
           "cta": "Steal our hook playbook",
           "vo": "Steal our hook playbook. Vyral District."
@@ -392,6 +623,39 @@
           "kind": "line",
           "text": "We fix your profile, your series and your CTA so viewers become fans.",
           "vo": "We fix your profile, your series and your CTA so viewers become fans."
+        },
+        {
+          "kind": "socials",
+          "title": "Every platform. *Growing.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "More followers on Instagram, TikTok, Twitch, Facebook, and X."
         },
         {
           "kind": "cta",
@@ -436,6 +700,39 @@
           "vo": "Hooks that test."
         },
         {
+          "kind": "socials",
+          "title": "Watch the numbers *climb.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "Every platform. Every follower count. Going up."
+        },
+        {
           "kind": "cta",
           "cta": "Join the District",
           "vo": "Join the District. Vyral District."
@@ -478,6 +775,39 @@
           "vo": "Let us build yours."
         },
         {
+          "kind": "socials",
+          "title": "Followers going *up.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "Instagram. TikTok. Twitch. Facebook. X. Watch every platform grow."
+        },
+        {
           "kind": "cta",
           "cta": "Start your 30-day plan",
           "vo": "Start your 30-day plan. Vyral District."
@@ -514,6 +844,39 @@
           "kind": "line",
           "text": "Say it in the *first 2 seconds.*",
           "vo": "Say it in the first two seconds."
+        },
+        {
+          "kind": "socials",
+          "title": "Every platform. *Growing.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "More followers on Instagram, TikTok, Twitch, Facebook, and X."
         },
         {
           "kind": "cta",
@@ -558,6 +921,39 @@
           "vo": "Fix those three, and the algorithm knows who to show you to."
         },
         {
+          "kind": "socials",
+          "title": "Watch the numbers *climb.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "Every platform. Every follower count. Going up."
+        },
+        {
           "kind": "cta",
           "cta": "Get your free growth audit",
           "vo": "Get your free growth audit from Vyral District."
@@ -598,6 +994,39 @@
           "kind": "line",
           "text": "Rotate them. *Never run out of ideas.*",
           "vo": "Rotate them, and you'll never run out of ideas."
+        },
+        {
+          "kind": "socials",
+          "title": "Followers going *up.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "Instagram. TikTok. Twitch. Facebook. X. Watch every platform grow."
         },
         {
           "kind": "cta",
@@ -643,6 +1072,39 @@
           "vo": "Every strong video keeps working, week after week."
         },
         {
+          "kind": "socials",
+          "title": "Every platform. *Growing.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "More followers on Instagram, TikTok, Twitch, Facebook, and X."
+        },
+        {
           "kind": "cta",
           "cta": "Join the District",
           "vo": "Join the District."
@@ -679,6 +1141,39 @@
           "kind": "line",
           "text": "We build the bridge between the two.",
           "vo": "Vyral District builds the bridge between the two."
+        },
+        {
+          "kind": "socials",
+          "title": "Watch the numbers *climb.*",
+          "platforms": [
+            {
+              "name": "Instagram",
+              "from": 1200,
+              "to": 48600
+            },
+            {
+              "name": "TikTok",
+              "from": 860,
+              "to": 125000
+            },
+            {
+              "name": "Twitch",
+              "from": 240,
+              "to": 12400
+            },
+            {
+              "name": "Facebook",
+              "from": 3100,
+              "to": 27900
+            },
+            {
+              "name": "X",
+              "from": 410,
+              "to": 18200
+            }
+          ],
+          "min": 3.8,
+          "vo": "Every platform. Every follower count. Going up."
         },
         {
           "kind": "cta",
