@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vyral District — Ad Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="wrap">
+      <a href="index.html" class="vd-logo">VYRAL<b>DISTRICT</b></a>
+      <div class="nav__links"><a href="index.html">Page</a><a href="index.html#feed">Feed</a></div>
+      <span class="eyebrow">Ad Studio</span>
+    </div>
+  </nav>
+
+  <main class="wrap studio">
+    <div class="panel">
+      <h3>Create an ad</h3>
+      <label for="type">Growth track</label>
+      <select id="type">
+        <option value="organic">Social media growth (organic)</option>
+        <option value="paid">Paid growth</option>
+        <option value="hybrid">Both (full stack)</option>
+      </select>
+      <label for="niche">Niche / audience</label>
+      <input id="niche" placeholder="e.g. fitness coaches, barbershops, music artists" />
+      <label for="offer">Call to action (optional)</label>
+      <input id="offer" placeholder="e.g. Get your free growth audit" />
+      <label for="tags">Extra hashtags (optional, comma separated)</label>
+      <input id="tags" placeholder="#FitnessCoach, #ATL" />
+      <div class="row" style="margin-top:18px">
+        <button class="btn" id="gen">⚡ Generate ad</button>
+        <button class="btn btn--ghost" id="regen">↻ Remix</button>
+      </div>
+
+      <hr style="border:0;border-top:1px solid var(--line);margin:24px 0" />
+      <h3>Brand voice</h3>
+      <p class="note">“The Hype Architect” — bold, confident, zero fluff.</p>
+      <label for="voice">Voice</label>
+      <select id="voice"></select>
+      <label for="rate">Speed <span id="rateV"></span></label>
+      <input id="rate" type="range" min="0.7" max="1.4" step="0.05" />
+      <label for="pitch">Pitch <span id="pitchV"></span></label>
+      <input id="pitch" type="range" min="0.5" max="1.5" step="0.05" />
+    </div>
+
+    <div>
+      <div class="preview">
+        <div>
+          <div id="card"></div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn" id="play">▶ Play voiceover</button>
+            <button class="btn btn--ghost" id="stop">■ Stop</button>
+            <button class="btn btn--ghost" id="png">⬇ PNG</button>
+          </div>
+        </div>
+        <div class="panel captions">
+          <h3>Edit</h3>
+          <label for="eHeadline">Headline</label><input id="eHeadline" />
+          <label for="eBody">Body</label><textarea id="eBody"></textarea>
+          <label for="eCta">CTA</label><input id="eCta" />
+          <label for="eVo">Voiceover script</label><textarea id="eVo"></textarea>
+          <label>Caption + hashtags</label>
+          <div class="tabs" id="tabs" role="tablist"></div>
+          <pre id="caption"></pre>
+          <div class="row">
+            <button class="btn btn--sm btn--ghost" id="copy">Copy caption</button>
+            <button class="btn btn--sm" id="queueBtn">+ Add to post queue</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:24px">
+        <div class="row" style="justify-content:space-between">
+          <h3 style="margin:0">Post queue</h3>
+          <button class="btn btn--sm btn--ghost" id="export">⬇ Export for auto-poster</button>
+        </div>
+        <p class="note">Exported ads go into <code>data/ads.json</code>. The auto-poster publishes the next unposted ad on schedule.</p>
+        <ul class="queue" id="queue"></ul>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="assets/brand.js"></script>
+  <script>
+    (async () => {
+      const data = await VD.loadData();
+      const brand = data.brand;
+      const $ = (id) => document.getElementById(id);
+      const platforms = ["instagram", "tiktok", "x", "facebook", "linkedin"];
+      let platform = "instagram";
+      let ad = data.ads[0];
+      let queue = [];
+      try { queue = JSON.parse(localStorage.getItem("vd-queue") || "[]"); } catch {}
+
+      // tabs
+      $("tabs").innerHTML = platforms.map((p) => `<button role="tab" data-p="${p}">${p === "x" ? "X" : p[0].toUpperCase() + p.slice(1)}</button>`).join("");
+      $("tabs").onclick = (e) => { const b = e.target.closest("button"); if (b) { platform = b.dataset.p; renderCaption(); } };
+
+      function renderCaption() {
+        [...$("tabs").children].forEach((b) => b.setAttribute("aria-selected", b.dataset.p === platform));
+        $("caption").textContent = VD.captionFor(ad, platform, brand);
+      }
+      function render() {
+        $("card").innerHTML = VD.cardHTML(ad, brand);
+        $("card").firstElementChild.style.borderRadius = "18px";
+        $("eHeadline").value = ad.headline; $("eBody").value = ad.body; $("eCta").value = ad.cta; $("eVo").value = ad.voiceover;
+        renderCaption();
+      }
+      ["eHeadline", "eBody", "eCta", "eVo"].forEach((id) => $(id).addEventListener("input", () => {
+        ad = { ...ad, headline: $("eHeadline").value, body: $("eBody").value, cta: $("eCta").value, voiceover: $("eVo").value };
+        $("card").innerHTML = VD.cardHTML(ad, brand); $("card").firstElementChild.style.borderRadius = "18px"; renderCaption();
+      }));
+
+      function generate() {
+        ad = VD.generateAd({
+          type: $("type").value, niche: $("niche").value, offer: $("offer").value,
+          extraTags: $("tags").value.split(",").map((s) => s.trim()).filter(Boolean).map((s) => (s.startsWith("#") ? s : "#" + s)),
+        });
+        render();
+      }
+      $("gen").onclick = generate;
+      $("regen").onclick = generate;
+
+      // voice
+      function fillVoices() {
+        const voices = VD.Voice.list();
+        $("voice").innerHTML = voices.map((v, i) => `<option value="${i}">${v.name} (${v.lang})</option>`).join("") || "<option>Default voice</option>";
+        const def = VD.Voice.pickDefault();
+        if (def) { $("voice").value = voices.indexOf(def); VD.Voice.selected = def; }
+      }
+      fillVoices();
+      if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = fillVoices;
+      $("voice").onchange = () => (VD.Voice.selected = VD.Voice.list()[+$("voice").value]);
+      $("rate").value = VD.Voice.config.rate; $("pitch").value = VD.Voice.config.pitch;
+      const showVals = () => { $("rateV").textContent = $("rate").value + "×"; $("pitchV").textContent = $("pitch").value; };
+      showVals();
+      $("rate").oninput = () => { VD.Voice.config.rate = +$("rate").value; showVals(); };
+      $("pitch").oninput = () => { VD.Voice.config.pitch = +$("pitch").value; showVals(); };
+      $("play").onclick = () => VD.Voice.speak(ad.voiceover);
+      $("stop").onclick = () => VD.Voice.stop();
+
+      $("copy").onclick = () => navigator.clipboard.writeText($("caption").textContent).then(() => { $("copy").textContent = "Copied ✓"; setTimeout(() => ($("copy").textContent = "Copy caption"), 1500); });
+
+      $("png").onclick = async () => {
+        if (!window.html2canvas) return alert("Image export library didn't load.");
+        const node = $("card").firstElementChild;
+        const canvas = await html2canvas(node, { scale: 1080 / node.offsetWidth, backgroundColor: null });
+        const a = document.createElement("a"); a.download = ad.id + ".png"; a.href = canvas.toDataURL("image/png"); a.click();
+      };
+
+      // queue
+      function renderQueue() {
+        try { localStorage.setItem("vd-queue", JSON.stringify(queue)); } catch {}
+        $("queue").innerHTML = queue.length ? queue.map((q, i) => `<li><b>${q.headline}</b><span>${q.type} · <a href="#" data-rm="${i}">remove</a></span></li>`).join("") : '<li><span>Nothing queued yet.</span></li>';
+      }
+      $("queue").onclick = (e) => { const r = e.target.closest("[data-rm]"); if (r) { e.preventDefault(); queue.splice(+r.dataset.rm, 1); renderQueue(); } };
+      $("queueBtn").onclick = () => { queue.push({ ...ad }); renderQueue(); };
+      $("export").onclick = () => {
+        const out = { brand, ads: [...data.ads, ...queue.filter((q) => !data.ads.some((a) => a.id === q.id))] };
+        const a = document.createElement("a");
+        a.download = "ads.json"; a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" })); a.click();
+      };
+
+      render(); renderQueue();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+{
+  "brand": {
+    "name": "Vyral District",
+    "handle": "@vyraldistrict",
+    "tagline": "Where accounts go to blow up.",
+    "url": "https://vyraldistrict.com",
+    "voice": {
+      "persona": "The Hype Architect",
+      "tone": ["bold", "confident", "street-smart", "zero fluff", "results-first"],
+      "rules": [
+        "Open with a hook in the first 5 words.",
+        "Talk to one creator, not a crowd: use 'you'.",
+        "Numbers beat adjectives.",
+        "Every ad ends with one clear move.",
+        "Never promise fake followers or guaranteed virality."
+      ],
+      "speech": { "rate": 1.05, "pitch": 0.85, "preferredVoices": ["Google US English", "Samantha", "Daniel", "Alex", "Microsoft Guy", "Microsoft Aria"] }
+    }
+  },
+  "ads": [
+    {
+      "id": "vd-001",
+      "type": "organic",
+      "theme": "violet",
+      "headline": "Posting daily. Still stuck at 1K?",
+      "body": "It's not the algorithm. It's the strategy. Vyral District builds content systems that turn scrollers into followers.",
+      "cta": "Get your free growth audit",
+      "voiceover": "Posting every day and still stuck at one K? It's not the algorithm. It's the strategy. Vyral District builds the content system that turns scrollers into followers. Tap the link. Get your free growth audit.",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#SocialMediaGrowth", "#ContentStrategy", "#GrowOnInstagram", "#TikTokGrowth", "#CreatorTips", "#OrganicGrowth", "#ContentCreator", "#SocialMediaTips", "#Algorithm", "#GrowthHacking"]
+    },
+    {
+      "id": "vd-002",
+      "type": "paid",
+      "theme": "magenta",
+      "headline": "$5 a day. Done right.",
+      "body": "Paid growth isn't about spending more. It's about spending smart. We build, test and scale ads that pay for themselves.",
+      "cta": "Launch your first campaign",
+      "voiceover": "Five dollars a day. Done right. Paid growth isn't about spending more. It's about spending smart. We build, test, and scale ads that pay for themselves. Launch your first campaign with Vyral District.",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#PaidAds", "#PaidGrowth", "#TikTokAds", "#MetaAds", "#DigitalMarketing", "#AdStrategy", "#ROAS", "#SmallBusinessMarketing", "#PerformanceMarketing", "#GrowthMarketing"]
+    },
+    {
+      "id": "vd-003",
+      "type": "organic",
+      "theme": "cyan",
+      "headline": "3 seconds. That's your window.",
+      "body": "If your hook doesn't land in 3 seconds, nothing else matters. We write hooks that stop thumbs.",
+      "cta": "Steal our hook playbook",
+      "voiceover": "Three seconds. That's your window. If your hook doesn't land in three seconds, nothing else matters. Vyral District writes hooks that stop thumbs. Grab our hook playbook. Link in bio.",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#HookWriting", "#ViralContent", "#ReelsTips", "#TikTokTips", "#ContentCreation", "#CreatorEconomy", "#ShortFormVideo", "#SocialMediaGrowth", "#Copywriting", "#ContentMarketing"]
+    },
+    {
+      "id": "vd-004",
+      "type": "hybrid",
+      "theme": "lime",
+      "headline": "Organic gets you seen. Paid gets you scaled.",
+      "body": "Most brands pick one. The ones that win run both. Vyral District runs your content and your ads under one roof.",
+      "cta": "Book a strategy call",
+      "voiceover": "Organic gets you seen. Paid gets you scaled. Most brands pick one. The ones that win run both. Vyral District runs your content and your ads under one roof. Book your strategy call today.",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#SocialMediaGrowth", "#PaidGrowth", "#OrganicGrowth", "#BrandGrowth", "#MarketingAgency", "#SocialMediaMarketing", "#ScaleYourBusiness", "#DigitalMarketing", "#Entrepreneur", "#BusinessGrowth"]
+    },
+    {
+      "id": "vd-005",
+      "type": "organic",
+      "theme": "violet",
+      "headline": "Your views are high. Your followers aren't.",
+      "body": "Views without follows means no reason to stay. We fix your profile, your series and your CTA so viewers become fans.",
+      "cta": "Fix my profile",
+      "voiceover": "Your views are high. Your followers aren't. That means people watch, but they don't have a reason to stay. Vyral District fixes your profile, your series, and your call to action, so viewers become fans.",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#GainFollowers", "#ProfileTips", "#InstagramGrowth", "#TikTokGrowth", "#CreatorTips", "#ContentStrategy", "#PersonalBrand", "#SocialMediaTips", "#GrowYourAudience", "#Engagement"]
+    },
+    {
+      "id": "vd-006",
+      "type": "paid",
+      "theme": "magenta",
+      "headline": "Stop boosting posts.",
+      "body": "The boost button is the most expensive button on the app. Real campaigns have targeting, testing and a plan. We bring all three.",
+      "cta": "Get a real ad plan",
+      "voiceover": "Stop boosting posts. The boost button is the most expensive button on the app. Real campaigns have targeting, testing, and a plan. Vyral District brings all three. Get a real ad plan today.",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#StopBoosting", "#FacebookAds", "#InstagramAds", "#TikTokAds", "#PaidSocial", "#AdTips", "#MarketingTips", "#SmallBusiness", "#PaidGrowth", "#AdStrategy"]
+    },
+    {
+      "id": "vd-007",
+      "type": "hybrid",
+      "theme": "cyan",
+      "headline": "0 to 10K is a system, not luck.",
+      "body": "Content pillars. Posting cadence. Hooks that test. Ads that amplify winners. That's the Vyral District system.",
+      "cta": "Join the District",
+      "voiceover": "Zero to ten K is a system, not luck. Content pillars. A posting cadence. Hooks that get tested. Ads that amplify your winners. That's the Vyral District system. Join the District.",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#10KFollowers", "#GrowthSystem", "#SocialMediaGrowth", "#ContentPillars", "#CreatorGrowth", "#GrowOnTikTok", "#GrowOnInstagram", "#MarketingStrategy", "#PaidGrowth", "#BuildInPublic"]
+    },
+    {
+      "id": "vd-008",
+      "type": "organic",
+      "theme": "lime",
+      "headline": "Consistency beats virality.",
+      "body": "One viral post fades in a week. A consistent system compounds for a year. Let us build yours.",
+      "cta": "Start your 30-day plan",
+      "voiceover": "Consistency beats virality. One viral post fades in a week. A consistent system compounds for a year. Let Vyral District build yours. Start your thirty day plan now.",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#Consistency", "#ContentPlan", "#SocialMediaGrowth", "#CreatorMindset", "#30DayChallenge", "#ContentCalendar", "#OrganicGrowth", "#PersonalBranding", "#Motivation", "#GrowthMindset"]
+    }
+  ]
+}

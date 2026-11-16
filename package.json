@@ -1,0 +1,14 @@
+{
+  "name": "vyral-district",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "npx --yes serve .",
+    "render": "node autopost/render.mjs",
+    "post": "node autopost/post.mjs",
+    "post:live": "POST_LIVE=true node autopost/post.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <style>html,body{margin:0;width:1080px;height:1080px;background:#000}#c,.vd-card{width:1080px;height:1080px}</style>
+</head>
+<body>
+  <div id="c"></div>
+  <script src="../assets/brand.js"></script>
+  <script>
+    let data;
+    const ready = VD.loadData("../data/ads.json").then((d) => (data = d));
+    window.show = async (id) => {
+      await ready;
+      await document.fonts.ready;
+      document.getElementById("c").innerHTML = VD.cardHTML(data.ads.find((a) => a.id === id), data.brand);
+    };
+  </script>
+</body>
+</html>
