@@ -147,7 +147,7 @@
         <div class="vd-card__top"><span class="vd-logo">VYRAL<b>DISTRICT</b></span><span class="vd-pill">${esc(ad.type)}</span></div>
         <h3 class="vd-card__headline">${esc(ad.headline)}</h3>
         <p class="vd-card__body">${esc(ad.body)}</p>
-        <div class="vd-card__foot"><div class="vd-card__cta">${esc(ad.cta)} →</div><div class="vd-card__handle">${esc(brand?.handle || "@vyraldistrict")}</div></div>
+        <div class="vd-card__foot"><div class="vd-card__cta">${esc(ad.cta)} →</div><div class="vd-card__handle">${esc(brand?.handle || "@vyral.district")}</div></div>
       </div>`;
   }
 

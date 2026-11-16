@@ -519,7 +519,7 @@ function overlay(t, sc, lt) {
     octx.globalAlpha = a; octx.textAlign = "center";
     const y = H > W ? H * 0.74 : H * 0.9;
     octx.font = `700 ${40 * S}px ${OVERLAY_FONT}`; octx.fillStyle = "#e6e6e6";
-    octx.fillText(`${BRAND.handle}  ·  ${BRAND.url.replace(/^https?:\/\//, "")}`, W / 2, y);
+    octx.fillText(`${BRAND.handle}  ·  link in bio`, W / 2, y);
     octx.font = `500 ${32 * S}px ${OVERLAY_FONT}`; octx.fillStyle = "#8f8f8f";
     octx.fillText(VIDEO.hashtags.slice(0, 3).join("   "), W / 2, y + 54 * S);
     octx.globalAlpha = 1; octx.textAlign = "left";
