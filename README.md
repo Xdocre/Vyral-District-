@@ -1,5 +1,9 @@
 # Vyral District
 
+![Vyral District logo](assets/logo.png)
+
+**Brand:** black (`#000`) and smoke grey (`#9b9b9b`), set in Helvetica-style bold type to match the logo. The logo files are `assets/logo-full.jpg` (original), `assets/logo.png` (circle crop), `assets/favicon.png` and `assets/apple-touch-icon.png`.
+
 **Where accounts go to blow up.** Vyral District promotes social media growth and paid growth.
 
 This repo has:
@@ -35,6 +39,19 @@ This repo has:
 The vertical videos keep their text clear of the TikTok and Reels buttons along the bottom and right edge. Every video ends on a CTA card with the handle, URL and hashtags. Each video also has a `.jpg` thumbnail of its final frame.
 
 To upload them as paid ads, use TikTok Ads Manager, Meta Ads Manager (Instagram and Facebook), Google Ads (YouTube) and X Ads. When you post them organically, use the hashtags from `data/videos.json`.
+
+### 3D engine
+
+The videos are rendered in real 3D with Three.js (`videos/engine3d.html`):
+
+- extruded smoke-grey type that flies in from depth
+- a metal ring echoing the logo circle, orbiting behind the content
+- 3D bars, slabs, badges and a CTA pill
+- drifting smoke and dust
+- a slowly orbiting camera
+- an end card that rebuilds the logo lockup in 3D
+
+The older flat engine is still available with `--2d`. Rendering runs on the CPU at about 0.3s per frame, so a full batch of 25 videos takes about an hour.
 
 ### Make or edit videos
 

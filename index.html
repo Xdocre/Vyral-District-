@@ -7,15 +7,17 @@
   <meta name="description" content="Vyral District grows social accounts with organic content systems and paid ad campaigns." />
   <meta property="og:title" content="Vyral District" />
   <meta property="og:description" content="Where accounts go to blow up. Organic growth + paid growth under one roof." />
-  <meta property="og:image" content="assets/ads/vd-004.png" />
+  <meta property="og:image" content="assets/logo-full.jpg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="icon" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
 </head>
 <body>
   <nav class="nav">
     <div class="wrap">
-      <a href="#" class="vd-logo">VYRAL<b>DISTRICT</b></a>
+      <a href="#" class="vd-logo"><img src="assets/logo.png" alt="" />VYRAL<b>DISTRICT</b></a>
       <div class="nav__links">
         <a href="#services">Services</a>
         <a href="#videos">Video ads</a>
@@ -48,7 +50,7 @@
 
       <aside class="profile" aria-label="Vyral District social profile">
         <div class="profile__head">
-          <div class="avatar">VD</div>
+          <div class="avatar" role="img" aria-label="Vyral District logo"></div>
           <div>
             <div style="font-weight:800;font-size:20px">Vyral District</div>
             <div style="color:var(--muted)">@vyraldistrict</div>
@@ -166,7 +168,7 @@
       const grid = document.getElementById("feedGrid");
       grid.innerHTML = ads.map((ad) => `
         <article class="post" data-id="${ad.id}">
-          <div class="post__head"><div class="avatar">VD</div><b>vyraldistrict</b><span style="color:var(--muted);margin-left:auto">Sponsored</span></div>
+          <div class="post__head"><div class="avatar" role="img" aria-label="Vyral District logo"></div><b>vyraldistrict</b><span style="color:var(--muted);margin-left:auto">Sponsored</span></div>
           ${VD.cardHTML(ad, brand)}
           <p class="post__caption"><b style="color:var(--text)">vyraldistrict</b> ${ad.body}</p>
           <p class="post__tags">${VD.hashtagsFor(ad, "instagram").join(" ")}</p>

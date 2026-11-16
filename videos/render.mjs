@@ -17,8 +17,10 @@ const { chromium } = require("playwright");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const arg = (k) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : null; };
 const ONLY = arg("--only"), FORMAT = arg("--format"), PREVIEW = process.argv.includes("--preview");
+const ENGINE = process.argv.includes("--2d") ? "engine.html" : "engine3d.html";
+const CANVAS = ENGINE === "engine.html" ? "c" : "out";
 
-const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json" };
+const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".mjs": "text/javascript" };
 const server = http.createServer(async (req, res) => {
   try {
     const p = path.join(root, decodeURIComponent(new URL(req.url, "http://x").pathname));
@@ -34,7 +36,7 @@ const { brand } = JSON.parse(await readFile(path.join(root, "data", "ads.json"),
 const outDir = path.join(root, "videos", "out");
 await mkdir(outDir, { recursive: true });
 
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
 for (const video of spec.videos) {
   if (ONLY && video.id !== ONLY) continue;
   const tl = JSON.parse(await readFile(path.join(root, "videos", "build", video.id, "timeline.json"), "utf8"));
@@ -42,13 +44,14 @@ for (const video of spec.videos) {
     if (FORMAT && fname !== FORMAT) continue;
     if (video.formats && !video.formats.includes(fname)) continue;
     const page = await browser.newPage({ viewport: { width: format.w, height: format.h }, deviceScaleFactor: 1 });
-    await page.goto(`http://localhost:${port}/videos/engine.html`);
+    await page.goto(`http://localhost:${port}/videos/${ENGINE}`);
+    await page.waitForFunction(() => typeof window.setup === "function");
     await page.evaluate((cfg) => window.setup(cfg), { format, timeline: tl, video, brand });
 
     if (PREVIEW) {
       for (const sc of tl.scenes) {
         const t = Math.min(sc.end - 0.3, sc.voEnd);
-        const b64 = await page.evaluate((t) => { window.drawFrame(t); return document.getElementById("c").toDataURL("image/jpeg", 0.85).split(",")[1]; }, t);
+        const b64 = await page.evaluate(([t, CANVAS_ID]) => { window.drawFrame(t); return document.getElementById(CANVAS_ID).toDataURL("image/jpeg", 0.85).split(",")[1]; }, [t, CANVAS]);
         await writeFile(path.join(outDir, `preview-${video.id}-${fname}-${sc.kind}-${t.toFixed(1)}.jpg`), Buffer.from(b64, "base64"));
       }
       await page.close();
@@ -67,13 +70,14 @@ for (const video of spec.videos) {
     const frames = Math.ceil(tl.duration * spec.fps);
     const t0 = Date.now();
     for (let f = 0; f < frames; f++) {
-      const b64 = await page.evaluate((t) => { window.drawFrame(t); return document.getElementById("c").toDataURL("image/jpeg", 0.93).split(",")[1]; }, f / spec.fps);
+      const b64 = await page.evaluate(([t, CANVAS_ID]) => { window.drawFrame(t); return document.getElementById(CANVAS_ID).toDataURL("image/jpeg", 0.93).split(",")[1]; }, [f / spec.fps, CANVAS]);
+      if (f === 60) console.log(`  ${video.id}-${fname}: ${((Date.now() - t0) / 60).toFixed(0)} ms/frame`);
       if (!ff.stdin.write(Buffer.from(b64, "base64"))) await new Promise((r) => ff.stdin.once("drain", r));
     }
     ff.stdin.end();
     await new Promise((r, j) => ff.on("close", (c) => (c ? j(new Error("ffmpeg " + c)) : r())));
     // poster frame (CTA end card) for thumbnails / website
-    const poster = await page.evaluate((t) => { window.drawFrame(t); return document.getElementById("c").toDataURL("image/jpeg", 0.85).split(",")[1]; }, tl.duration - 0.2);
+    const poster = await page.evaluate(([t, CANVAS_ID]) => { window.drawFrame(t); return document.getElementById(CANVAS_ID).toDataURL("image/jpeg", 0.85).split(",")[1]; }, [tl.duration - 0.2, CANVAS]);
     await writeFile(path.join(outDir, `${video.id}-${fname}.jpg`), Buffer.from(poster, "base64"));
     console.log(`✓ ${video.id}-${fname}.mp4  ${frames} frames  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
     await page.close();

@@ -1,0 +1,496 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}#gl{position:absolute;left:-99999px}</style>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<canvas id="out"></canvas>
+<script type="module">
+/* Vyral District 3D motion engine (Three.js).
+   Black + smoke grey, extruded Helvetica-style type, a thin orbit ring echoing
+   the logo circle, drifting smoke. Every frame is a pure function of time t. */
+import * as THREE from "three";
+import { FontLoader } from "./vendor/FontLoader.js";
+import { TextGeometry } from "./vendor/TextGeometry.js";
+import { RoundedBoxGeometry } from "./vendor/RoundedBoxGeometry.js";
+import { RoomEnvironment } from "./vendor/RoomEnvironment.js";
+
+const GREY = 0x9b9b9b, WHITE = 0xf2f2f2, DARK = 0x141414;
+const OVERLAY_FONT = 'Inter, "Helvetica Neue", Arial, sans-serif';
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const eOut = (k) => 1 - Math.pow(1 - clamp(k), 3);
+const eIn = (k) => Math.pow(clamp(k), 3);
+const eBack = (k) => { k = clamp(k); const c = 1.6; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+const rand = (i) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const ascii = (s) => s.replace(/[’‘]/g, "'").replace(/[“”]/g, '"').replace(/…/g, "...").replace(/[→]/g, "").replace(/[^\x20-\x7E]/g, "").replace(/\s+/g, " ").trim();
+
+let W, H, TL, VIDEO, BRAND, font, renderer, scene, camera, out, octx, glCanvas;
+let VIEW_W, VIEW_H; // visible world size at z=0
+const CAM_Z = 22, FOV = 32;
+let world, ring1, ring2, dust, sceneGroups = [];
+
+const mats = {};
+function makeMaterials() {
+  mats.grey = new THREE.MeshStandardMaterial({ color: 0xa8a8a8, metalness: 0.65, roughness: 0.3 });
+  mats.side = new THREE.MeshStandardMaterial({ color: 0x262626, metalness: 0.8, roughness: 0.5 });
+  mats.white = new THREE.MeshStandardMaterial({ color: WHITE, metalness: 0.3, roughness: 0.18, emissive: 0x2a2a2a });
+  mats.whiteSide = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, metalness: 0.6, roughness: 0.35 });
+  mats.slab = new THREE.MeshStandardMaterial({ color: DARK, metalness: 0.6, roughness: 0.4 });
+  mats.black = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, metalness: 0.4, roughness: 0.5 });
+  mats.ring = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, metalness: 0.9, roughness: 0.25, emissive: 0x1a1a1a });
+}
+
+/* ---------- 3D text ---------- */
+const geoCache = new Map();
+function wordGeo(word) {
+  if (!geoCache.has(word)) {
+    const g = new TextGeometry(word, { font, size: 1, depth: 0.16, curveSegments: 4, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.018, bevelSegments: 1 });
+    g.computeBoundingBox();
+    geoCache.set(word, g);
+  }
+  return geoCache.get(word);
+}
+const gw = (g) => g.boundingBox.max.x - g.boundingBox.min.x;
+function tokens(text) {
+  const out = []; let hi = false;
+  for (const raw of text.split(/\s+/)) {
+    let w = raw, h = hi, end = false;
+    if (w.startsWith("*")) { h = true; w = w.slice(1); }
+    if (w.endsWith("*")) { end = true; w = w.slice(0, -1); } else if (/\*[.,!?]$/.test(w)) { end = true; w = w.replace("*", ""); }
+    w = ascii(w);
+    if (w) out.push({ w, hi: h });
+    hi = h && !end;
+  }
+  return out;
+}
+/** Builds a block of 3D words that fits maxW (world units). Returns { group, words[], height }. */
+function textBlock(text, { maxSize, maxW, maxLines = 4, align = "center", white = false }) {
+  const toks = tokens(text);
+  const space = 0.4;
+  const lay = (size) => {
+    const lines = [[]]; let x = 0;
+    for (const t of toks) {
+      const w = gw(wordGeo(t.w)) * size;
+      if (x > 0 && x + w > maxW) { lines.push([]); x = 0; }
+      lines[lines.length - 1].push({ ...t, x, ww: w }); x += w + space * size;
+    }
+    return lines;
+  };
+  let size = maxSize, lines = lay(size);
+  while ((lines.length > maxLines || lines.some((l) => l.length && l.at(-1).x + l.at(-1).ww > maxW)) && size > 0.1) { size *= 0.94; lines = lay(size); }
+  const lh = size * 1.34;
+  const group = new THREE.Group(); const words = [];
+  lines.forEach((line, li) => {
+    const lw = line.length ? line.at(-1).x + line.at(-1).ww : 0;
+    const ox = align === "center" ? -lw / 2 : 0;
+    for (const t of line) {
+      const hi = t.hi || white;
+      const m = new THREE.Mesh(wordGeo(t.w), hi ? [mats.white, mats.whiteSide] : [mats.grey, mats.side]);
+      const holder = new THREE.Group();
+      m.position.set(-gw(m.geometry) / 2, -0.36, -0.08); // pivot at word centre
+      holder.add(m);
+      holder.scale.setScalar(size);
+      holder.userData.base = new THREE.Vector3(ox + t.x + t.ww / 2, -(li * lh) + ((lines.length - 1) * lh) / 2, 0);
+      holder.position.copy(holder.userData.base);
+      group.add(holder); words.push(holder);
+    }
+  });
+  return { group, words, height: lines.length * lh, size };
+}
+function animateWords(words, lt, { stagger = 0.1, mode = "fly" } = {}) {
+  words.forEach((w, i) => {
+    const k = (lt - i * stagger) / 0.55;
+    w.visible = k > 0;
+    if (!w.visible) return;
+    const b = w.userData.base;
+    if (mode === "slam") {
+      const p = eBack(k);
+      w.position.set(b.x, b.y, lerp(9, 0, eOut(k)));
+      w.rotation.set(lerp(-0.9, 0, p), 0, 0);
+    } else {
+      const p = eOut(k);
+      w.position.set(b.x, b.y - (1 - p) * 1.2, lerp(-14, 0, p));
+      w.rotation.set(0, lerp(1.1, 0, eBack(k)), 0);
+    }
+  });
+}
+
+/* ---------- environment ---------- */
+function smokeTexture() {
+  const c = document.createElement("canvas"); c.width = c.height = 256;
+  const g = c.getContext("2d");
+  for (let i = 0; i < 26; i++) {
+    const x = 128 + (rand(i) - 0.5) * 120, y = 128 + (rand(i + 40) - 0.5) * 120, r = 40 + rand(i + 80) * 70;
+    const rg = g.createRadialGradient(x, y, 0, x, y, r);
+    rg.addColorStop(0, "rgba(150,150,150,0.07)"); rg.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = rg; g.fillRect(0, 0, 256, 256);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function buildWorld() {
+  world = new THREE.Group(); scene.add(world);
+  // Logo circle as a thin metal ring orbiting behind the content
+  const R = Math.min(VIEW_W, VIEW_H) * 0.62;
+  ring1 = new THREE.Mesh(new THREE.TorusGeometry(R, 0.035, 12, 220), mats.ring);
+  ring1.position.z = -6; world.add(ring1);
+  ring2 = new THREE.Mesh(new THREE.TorusGeometry(R * 1.35, 0.02, 8, 220), mats.ring);
+  ring2.position.z = -12; world.add(ring2);
+  // Floor grid fading into fog
+
+  // Dust
+  const n = 700, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { pos[i * 3] = (rand(i) - 0.5) * 70; pos[i * 3 + 1] = (rand(i + 1e3) - 0.5) * 70; pos[i * 3 + 2] = -rand(i + 2e3) * 40 + 8; }
+  const dg = new THREE.BufferGeometry(); dg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0x9a9a9a, size: 0.06, transparent: true, opacity: 0.7, depthWrite: false }));
+  world.add(dust);
+}
+function animateWorld(t) {
+  ring1.rotation.set(0.35 * Math.sin(t * 0.35), t * 0.25, 0);
+  ring2.rotation.set(1.1 + 0.2 * Math.sin(t * 0.2), -t * 0.12, 0.3);
+  dust.rotation.y = t * 0.02; dust.position.y = (t * 0.25) % 10;
+}
+
+/* ---------- scenes ---------- */
+// Content area: vertical keeps clear of TikTok/Reels UI (bottom ~22%, right rail).
+function area() {
+  if (H > W) return { x: -VIEW_W * 0.03, y: VIEW_H * 0.05, w: VIEW_W * 0.8, h: VIEW_H * 0.62 };
+  if (W > H) return { x: 0, y: 0, w: VIEW_W * 0.72, h: VIEW_H * 0.74 };
+  return { x: 0, y: 0, w: VIEW_W * 0.84, h: VIEW_H * 0.76 };
+}
+function iconFor(item, i) {
+  if (/^[✕✗×x]\s/i.test(item)) return { kind: "x", text: item.replace(/^\S+\s/, "") };
+  const circ = "①②③④⑤".indexOf(item[0]);
+  if (circ > -1) return { kind: "num", n: circ + 1, text: item.slice(1).trim() };
+  return { kind: "num", n: i + 1, text: ascii(item) };
+}
+
+const BUILD = {
+  hook(sc) {
+    const a = area();
+    const tb = textBlock(sc.text, { maxSize: Math.min(a.w * 0.2, 2.6), maxW: a.w, maxLines: 4 });
+    tb.group.position.set(a.x, a.y, 0);
+    return { group: tb.group, update(lt) { animateWords(tb.words, lt, { stagger: 0.13, mode: "slam" }); tb.group.rotation.y = Math.sin(lt * 0.7) * 0.12; tb.group.rotation.x = Math.sin(lt * 0.5) * 0.05; }, shake: true };
+  },
+  line(sc) {
+    const a = area();
+    const tb = textBlock(sc.text, { maxSize: Math.min(a.w * 0.11, 1.5), maxW: a.w, maxLines: 5 });
+    tb.group.position.set(a.x, a.y, 0);
+    return { group: tb.group, update(lt) { animateWords(tb.words, lt, { stagger: 0.08 }); tb.group.rotation.y = Math.sin(lt * 0.6) * 0.1 - 0.05; } };
+  },
+  counter(sc) {
+    const a = area(), group = new THREE.Group();
+    const size = Math.min(a.w * 0.3, a.h * 0.3);
+    const nums = {};
+    for (let v = sc.from; v <= sc.to; v++) {
+      const tb = textBlock(`*${ascii(sc.prefix + v)}*`, { maxSize: size, maxW: a.w * 0.9, maxLines: 1 });
+      tb.group.visible = false; group.add(tb.group); nums[v] = tb;
+    }
+    const R = size * 0.95;
+    const track = new THREE.Mesh(new THREE.TorusGeometry(R, 0.05, 10, 160), mats.side); group.add(track);
+    let arc = null, arcK = -1;
+    const suffix = sc.suffix ? textBlock(ascii(sc.suffix), { maxSize: size * 0.28, maxW: a.w, maxLines: 1 }) : null;
+    if (suffix) { suffix.group.position.set(R + size * 0.45, -size * 0.3, 0); group.add(suffix.group); }
+    const label = textBlock(sc.label, { maxSize: Math.min(a.w * 0.08, 1.05), maxW: a.w, maxLines: 2 });
+    label.group.position.y = -R - label.size * 1.3 - (label.height - label.size) / 2; group.add(label.group);
+    const labelShift = suffix ? size * 0.45 : 0;
+    const sw = suffix ? size * 0.9 : 0;
+    group.position.set(a.x - sw / 2, a.y + label.height * 0.45, 0);
+    label.group.position.x = sw / 2;
+    return {
+      group,
+      update(lt) {
+        const k = eOut(lt / 1.1);
+        const v = Math.round(lerp(sc.from, sc.to, k));
+        for (const [n, tb] of Object.entries(nums)) { tb.group.visible = +n === v; animateWords(tb.words, 1, {}); }
+        const pop = 1 + 0.1 * Math.max(0, 1 - Math.abs(lt - 1.1) / 0.25);
+        nums[v].group.scale.setScalar(pop);
+        nums[v].group.position.z = lerp(-10, 0, eOut(lt / 0.5));
+        const q = Math.round(k * 100);
+        if (q !== arcK && q > 0) { if (arc) { group.remove(arc); arc.geometry.dispose(); } arc = new THREE.Mesh(new THREE.TorusGeometry(R, 0.11, 12, 160, Math.PI * 2 * q / 100), mats.white); arc.rotation.z = Math.PI / 2; arc.scale.x = -1; group.add(arc); arcK = q; }
+        if (suffix) animateWords(suffix.words, lt - 0.9, {});
+        animateWords(label.words, lt - 0.6, { stagger: 0.06 });
+        group.rotation.y = Math.sin(lt * 0.6) * 0.18;
+        group.rotation.x = Math.sin(lt * 0.45) * 0.06;
+      },
+    };
+  },
+  list(sc) {
+    const a = area(), group = new THREE.Group();
+    const n = sc.items.length;
+    const title = textBlock(sc.title, { maxSize: Math.min(a.w * 0.085, 1.1), maxW: a.w, maxLines: 1 });
+    const rowH = Math.min(a.h / (n + 1.6), a.w * 0.2);
+    const slabH = rowH * 0.78;
+    const total = title.size * 1.8 + n * rowH;
+    title.group.position.y = total / 2 - title.size * 0.5; group.add(title.group);
+    const rows = sc.items.map((item, i) => {
+      const ic = iconFor(item, i);
+      const row = new THREE.Group();
+      const slab = new THREE.Mesh(new RoundedBoxGeometry(a.w, slabH, 0.5, 4, slabH * 0.22), mats.slab);
+      slab.position.z = -0.35; row.add(slab);
+      // badge
+      const bx = -a.w / 2 + slabH * 0.62;
+      const badge = new THREE.Mesh(new THREE.CylinderGeometry(slabH * 0.34, slabH * 0.34, 0.3, 48), ic.kind === "x" ? mats.side : mats.white);
+      badge.rotation.x = Math.PI / 2; badge.position.set(bx, 0, 0.05); row.add(badge);
+      if (ic.kind === "num") {
+        const nb = textBlock(String(ic.n), { maxSize: slabH * 0.42, maxW: slabH, maxLines: 1 });
+        nb.group.children.forEach((c) => c.children[0].material = [mats.black, mats.black]);
+        nb.group.position.set(bx, 0, 0.22); animateWords(nb.words, 9, {}); row.add(nb.group);
+      } else {
+        for (const s of [1, -1]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(slabH * 0.42, slabH * 0.08, 0.14), mats.white); bar.position.set(bx, 0, 0.25); bar.rotation.z = s * Math.PI / 4; row.add(bar); }
+      }
+      const txtW = a.w - slabH * 1.5;
+      const tb = textBlock(ic.text, { maxSize: slabH * 0.4, maxW: txtW, maxLines: 1, white: true });
+      // left-align next to the badge
+      const lineW = tb.words.reduce((m, w) => Math.max(m, w.userData.base.x + gw(w.children[0].geometry) * w.scale.x / 2), -1e9) - tb.words.reduce((m, w) => Math.min(m, w.userData.base.x - gw(w.children[0].geometry) * w.scale.x / 2), 1e9);
+      tb.group.position.set(bx + slabH * 0.6 + lineW / 2, 0, 0.05);
+      animateWords(tb.words, 9, {});
+      row.add(tb.group);
+      row.position.y = total / 2 - title.size * 1.8 - rowH * (i + 0.5);
+      group.add(row);
+      return row;
+    });
+    group.position.set(a.x, a.y, 0);
+    const span = Math.max(0.6, (sc.voEnd - sc.voStart - 0.3) / n);
+    return {
+      group,
+      update(lt) {
+        animateWords(title.words, lt, { stagger: 0.05 });
+        rows.forEach((r, i) => {
+          const k = (lt - 0.25 - i * span) / 0.55;
+          r.visible = k > 0;
+          const p = eBack(k);
+          r.position.x = lerp(-VIEW_W, 0, eOut(k));
+          r.position.z = lerp(-6, 0, eOut(k));
+          r.rotation.y = lerp(-1.0, 0, p) + Math.sin(lt * 0.8 + i) * 0.04;
+        });
+        group.rotation.y = -0.12 + Math.sin(lt * 0.5) * 0.06;
+        group.rotation.x = 0.05;
+      },
+    };
+  },
+  chart(sc) {
+    const a = area(), group = new THREE.Group();
+    const n = sc.bars.length;
+    const title = textBlock(sc.title, { maxSize: Math.min(a.w * 0.085, 1.15), maxW: a.w, maxLines: 2 });
+    const ch = a.h * 0.46, gap = a.w * 0.07, bw = (a.w - gap * (n - 1)) / n;
+    title.group.position.y = ch / 2 + title.height / 2 + title.size * 1.6; group.add(title.group);
+    const bars = sc.bars.map((name, i) => {
+      const target = ch * (0.25 + 0.75 * Math.pow((i + 1) / n, 1.6));
+      const geo = new RoundedBoxGeometry(bw, 1, bw * 0.8, 3, Math.min(bw * 0.12, 0.25)); geo.translate(0, 0.5, 0);
+      const m = new THREE.Mesh(geo, i === n - 1 ? mats.white : mats.grey);
+      m.position.set(-a.w / 2 + bw / 2 + i * (bw + gap), -ch / 2, 0);
+      group.add(m);
+      const lab = textBlock(ascii(name), { maxSize: Math.min(bw * 0.24, 0.6), maxW: bw + gap * 0.8, maxLines: 1 });
+      lab.group.position.set(m.position.x, -ch / 2 - lab.size * 1.1, bw * 0.4); group.add(lab.group);
+      return { m, target, lab };
+    });
+    let tube = null, cone = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.7, 24), mats.white); group.add(cone);
+    group.position.set(a.x, a.y - title.height * 0.5 - title.size * 0.5, 0);
+    const span = Math.max(0.35, (sc.voEnd - sc.voStart - 0.4) / n);
+    return {
+      group,
+      update(lt) {
+        animateWords(title.words, lt, { stagger: 0.06 });
+        const pts = [];
+        bars.forEach((b, i) => {
+          const k = eOut((lt - 0.3 - i * span) / 0.7);
+          b.m.scale.y = Math.max(0.001, b.target * k);
+          b.m.visible = k > 0;
+          animateWords(b.lab.words, (lt - 0.3 - i * span) * 1.5, {});
+          if (k > 0.05) pts.push(new THREE.Vector3(b.m.position.x, b.m.position.y + b.target * k + 0.6, bw * 0.5));
+        });
+        if (tube) { group.remove(tube); tube.geometry.dispose(); tube = null; }
+        cone.visible = pts.length > 1;
+        if (pts.length > 1) {
+          tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.1), 60, 0.09, 10), mats.white); group.add(tube);
+          const p2 = pts.at(-1), p1 = pts.at(-2);
+          cone.position.copy(p2);
+          cone.rotation.z = Math.atan2(p2.y - p1.y, p2.x - p1.x) - Math.PI / 2;
+        }
+        group.rotation.y = -0.35 + Math.sin(lt * 0.4) * 0.12 + lt * 0.03;
+        group.rotation.x = 0.12;
+      },
+    };
+  },
+  split(sc) {
+    const a = area(), group = new THREE.Group(), vertical = H >= W;
+    const half = (sc.voEnd - sc.voStart) / 2;
+    const ta = textBlock(sc.a, { maxSize: Math.min(a.w * (vertical ? 0.14 : 0.08), 1.9), maxW: vertical ? a.w : a.w * 0.46, maxLines: 3 });
+    const tb = textBlock(sc.b, { maxSize: Math.min(a.w * (vertical ? 0.14 : 0.08), 1.9), maxW: vertical ? a.w : a.w * 0.46, maxLines: 3 });
+    const div = new THREE.Mesh(new THREE.BoxGeometry(vertical ? a.w : 0.06, vertical ? 0.06 : a.h * 0.8, 0.06), mats.white);
+    if (vertical) { ta.group.position.y = a.h * 0.25; tb.group.position.y = -a.h * 0.22; }
+    else { ta.group.position.x = -a.w * 0.27; tb.group.position.x = a.w * 0.27; }
+    group.add(ta.group, tb.group, div);
+    group.position.set(a.x, a.y, 0);
+    return {
+      group, shake: true,
+      update(lt) {
+        animateWords(ta.words, lt, { stagger: 0.1, mode: "slam" });
+        animateWords(tb.words, lt - half, { stagger: 0.1, mode: "slam" });
+        const k = eOut((lt - half + 0.2) / 0.5);
+        div.scale.set(vertical ? Math.max(0.001, k) : 1, vertical ? 1 : Math.max(0.001, k), 1);
+        group.rotation.y = Math.sin(lt * 0.5) * 0.12; group.rotation.x = Math.sin(lt * 0.4) * 0.05;
+      },
+    };
+  },
+  cta(sc) {
+    const a = area(), group = new THREE.Group();
+    // Logo lockup: thin ring + stacked VYRAL / DISTRICT, left aligned, like the brand mark
+    const R = Math.min(a.w * 0.48, a.h * 0.3);
+    const logo = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(R, 0.05, 12, 200), mats.ring); logo.add(ring);
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(R, 96), new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.2, roughness: 0.9 })); disc.position.z = -0.4; logo.add(disc);
+    const L1 = textBlock("VYRAL", { maxSize: R * 0.3, maxW: R * 1.3, maxLines: 1 });
+    const L2 = textBlock("DISTRICT", { maxSize: R * 0.3, maxW: R * 1.3, maxLines: 1 });
+    const s = Math.min(L1.size, L2.size);
+    const left = -R * 0.66;
+    for (const [tb, y] of [[L1, R * 0.08 + s * 0.7], [L2, R * 0.08 - s * 0.7]]) {
+      const minX = Math.min(...tb.words.map((w) => w.userData.base.x - gw(w.children[0].geometry) * w.scale.x / 2));
+      tb.group.position.set(left - minX, y, 0.1); logo.add(tb.group);
+    }
+    logo.position.y = R * 0.55; group.add(logo);
+    // CTA pill
+    const ctaText = textBlock(ascii(sc.cta), { maxSize: Math.min(a.w * 0.06, 0.8), maxW: a.w * 0.8, maxLines: 1 });
+    ctaText.group.children.forEach((c) => c.children[0].material = [mats.black, mats.black]);
+    const tw = ctaText.words.reduce((m, w) => Math.max(m, w.userData.base.x + gw(w.children[0].geometry) * w.scale.x / 2), -1e9) * 2;
+    const ph = ctaText.size * 2.2, pw = Math.min(a.w, tw + ph * 1.4);
+    const pill = new THREE.Group();
+    const pillMesh = new THREE.Mesh(new RoundedBoxGeometry(pw, ph, 0.5, 6, ph * 0.49), mats.white); pillMesh.position.z = -0.3;
+    ctaText.group.position.z = 0.02;
+    pill.add(pillMesh, ctaText.group);
+    pill.position.y = -R * 0.75 - ph * 0.3; group.add(pill);
+    group.position.set(a.x, a.y + (H > W ? 0 : -R * 0.05), 0);
+    return {
+      group, overlay: true, ctaY: pill.position.y - ph,
+      update(lt) {
+        const k = eBack(lt / 0.8);
+        logo.scale.setScalar(lerp(0.4, 1, k));
+        logo.rotation.y = lerp(-Math.PI * 0.9, 0, eOut(lt / 1.1)) + Math.sin(lt * 0.6) * 0.1;
+        logo.rotation.x = Math.sin(lt * 0.4) * 0.06;
+        ring.rotation.z = lt * 0.2;
+        animateWords(L1.words, lt - 0.15, { stagger: 0.04 });
+        animateWords(L2.words, lt - 0.3, { stagger: 0.04 });
+        const pk = (lt - 0.75) / 0.5;
+        pill.visible = pk > 0;
+        const pulse = 1 + 0.035 * Math.sin(Math.max(0, lt - 1.3) * 6);
+        pill.scale.setScalar(Math.max(0.001, eBack(pk)) * pulse);
+        pill.rotation.x = lerp(-1.2, 0, eOut(pk)) + Math.sin(lt * 0.9) * 0.08;
+        animateWords(ctaText.words, 9, {});
+      },
+    };
+  },
+};
+
+/* ---------- 2D smoke (behind the 3D layer; far cheaper than 3D sprites) ---------- */
+let smokeField;
+function buildSmokeField() {
+  // Low-res, tall smoke field generated once; each frame scrolls it upward.
+  const fw = Math.ceil(W / 2), fh = Math.ceil(H / 2) * 2;
+  smokeField = document.createElement("canvas"); smokeField.width = fw; smokeField.height = fh;
+  const g = smokeField.getContext("2d");
+  for (let i = 0; i < 70; i++) {
+    for (const off of [0, fh / 2]) { // duplicate halves so the scroll loops seamlessly
+      const x = rand(i) * fw, y = (rand(i + 50) * fh) / 2 + off, r = (0.12 + rand(i + 90) * 0.3) * Math.max(fw, fh / 2);
+      const rg = g.createRadialGradient(x, y, 0, x, y, r);
+      rg.addColorStop(0, `rgba(140,140,140,${0.008 + rand(i + 7) * 0.014})`); rg.addColorStop(0.6, `rgba(140,140,140,${0.004 + rand(i + 7) * 0.005})`); rg.addColorStop(1, "rgba(140,140,140,0)");
+      g.fillStyle = rg; g.fillRect(0, 0, fw, fh);
+    }
+  }
+  // dither to kill banding on smooth gradients
+  const img = g.getImageData(0, 0, fw, fh), d = img.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (rand(i * 0.37) - 0.5) * 6; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  g.putImageData(img, 0, 0);
+}
+function drawSmoke(t) {
+  octx.fillStyle = "#000"; octx.fillRect(0, 0, W, H);
+  if (!smokeField) buildSmokeField();
+  const fh = smokeField.height / 2;
+  const sy = (t * 6) % fh; // drift upward
+  octx.imageSmoothingEnabled = true;
+  octx.drawImage(smokeField, 0, sy, smokeField.width, fh, Math.sin(t * 0.15) * W * 0.03 - W * 0.03, 0, W * 1.06, H);
+}
+
+/* ---------- 2D overlay ---------- */
+function overlay(t, sc, lt) {
+  const S = Math.min(W, H) / 1080;
+  const pad = 56 * S, topY = H > W ? H * 0.075 : pad + 20 * S;
+  octx.textBaseline = "alphabetic";
+  if (sc.kind !== "cta") {
+    octx.font = `700 ${32 * S}px ${OVERLAY_FONT}`; octx.fillStyle = "rgba(200,200,200,.9)";
+    octx.fillText("VYRAL DISTRICT", pad, topY);
+  }
+  const prog = clamp(t / TL.duration);
+  octx.fillStyle = "rgba(255,255,255,.14)"; octx.fillRect(pad, topY + 22 * S, W - pad * 2, 4 * S);
+  octx.fillStyle = "#bdbdbd"; octx.fillRect(pad, topY + 22 * S, (W - pad * 2) * prog, 4 * S);
+  if (sc.kind === "cta") {
+    const a = clamp((lt - 1.1) / 0.4);
+    octx.globalAlpha = a; octx.textAlign = "center";
+    const y = H > W ? H * 0.74 : H * 0.9;
+    octx.font = `700 ${40 * S}px ${OVERLAY_FONT}`; octx.fillStyle = "#e6e6e6";
+    octx.fillText(`${BRAND.handle}  ·  ${BRAND.url.replace(/^https?:\/\//, "")}`, W / 2, y);
+    octx.font = `500 ${32 * S}px ${OVERLAY_FONT}`; octx.fillStyle = "#8f8f8f";
+    octx.fillText(VIDEO.hashtags.slice(0, 3).join("   "), W / 2, y + 54 * S);
+    octx.globalAlpha = 1; octx.textAlign = "left";
+  }
+  // subtle film grain + vignette
+  const vg = octx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.55)");
+  octx.fillStyle = vg; octx.fillRect(0, 0, W, H);
+  // transition flash
+  if (sc.start > 0 && lt < 0.22) { octx.fillStyle = `rgba(190,190,190,${0.35 * (1 - lt / 0.22)})`; octx.fillRect(0, 0, W, H); }
+}
+
+/* ---------- public API ---------- */
+window.setup = async (cfg) => {
+  ({ w: W, h: H } = cfg.format);
+  TL = cfg.timeline; VIDEO = cfg.video; BRAND = cfg.brand;
+  glCanvas = document.getElementById("gl");
+  out = document.getElementById("out"); out.width = W; out.height = H; octx = out.getContext("2d");
+  await document.fonts.load(`700 40px Inter`).catch(() => {});
+  font = await new Promise((res, rej) => new FontLoader().load("./vendor/helvetiker_bold.typeface.json", res, undefined, rej));
+  renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setClearColor(0x000000, 0);
+  renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x000000, 0.028);
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  camera = new THREE.PerspectiveCamera(FOV, W / H, 0.1, 200);
+  VIEW_H = 2 * CAM_Z * Math.tan(THREE.MathUtils.degToRad(FOV / 2)); VIEW_W = VIEW_H * (W / H);
+  const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(-8, 10, 14); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xffffff, 1.4); rim.position.set(10, 4, -10); scene.add(rim);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+  makeMaterials(); buildWorld();
+  sceneGroups = TL.scenes.map((sc) => { const s = BUILD[sc.kind](sc); s.group.visible = false; scene.add(s.group); return s; });
+};
+
+window.drawFrame = (t) => {
+  let idx = TL.scenes.findIndex((s) => t >= s.start && t < s.end);
+  if (idx === -1) idx = TL.scenes.length - 1;
+  const sc = TL.scenes[idx], S3 = sceneGroups[idx], lt = t - sc.start;
+  sceneGroups.forEach((g, i) => (g.group.visible = i === idx));
+  animateWorld(t);
+  S3.group.scale.setScalar(1);
+  S3.update(lt);
+  // exit: content rushes toward camera and fades into fog
+  const outT = sc.end - t, last = idx === TL.scenes.length - 1;
+  const baseZ = 0;
+  if (!last && outT < 0.25) { const k = eIn(1 - outT / 0.25); S3.group.position.z = baseZ + k * 10; } else S3.group.position.z = baseZ;
+  // camera: slow orbit + dolly, shake on slams
+  const shake = S3.shake && lt < 0.35 ? (1 - lt / 0.35) * 0.25 : 0;
+  camera.position.set(Math.sin(t * 0.3) * 1.4 + Math.sin(lt * 80) * shake, Math.cos(t * 0.23) * 0.8 + Math.cos(lt * 65) * shake, CAM_Z + 1.2 - eOut(lt / (sc.end - sc.start)) * 1.6);
+  camera.lookAt(0, 0, 0);
+  renderer.render(scene, camera);
+  drawSmoke(t);
+  octx.drawImage(glCanvas, 0, 0);
+  overlay(t, sc, lt);
+};
+window.ready = true;
+</script>
+</body>
+</html>

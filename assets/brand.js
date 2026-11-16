@@ -1,10 +1,11 @@
 /* Vyral District — shared brand engine: voice, hashtags, ad generator, ad card renderer. */
 (function (global) {
   const THEMES = {
-    violet:  { a: "#8b5cf6", b: "#ec4899", ink: "#ffffff" },
-    magenta: { a: "#ec4899", b: "#f97316", ink: "#ffffff" },
-    cyan:    { a: "#06b6d4", b: "#8b5cf6", ink: "#ffffff" },
-    lime:    { a: "#84cc16", b: "#06b6d4", ink: "#0b0b12" },
+    // Monochrome variants of the brand: black + smoke grey
+    violet:  { a: "#161616", b: "#000000", ink: "#bdbdbd" },
+    magenta: { a: "#262626", b: "#050505", ink: "#e6e6e6" },
+    cyan:    { a: "#0a0a0a", b: "#1f1f1f", ink: "#9b9b9b" },
+    lime:    { a: "#d4d4d4", b: "#8f8f8f", ink: "#0a0a0a" },
   };
 
   // How many hashtags each platform should get (keeps posts native to each feed).
