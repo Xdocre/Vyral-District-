@@ -1,0 +1,362 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+/* Vyral District motion engine. Every frame is a pure function of time t, so
+   frame-by-frame capture is smooth and deterministic. */
+const THEMES = {
+  violet:  { a: "#8b5cf6", b: "#ec4899", c: "#22d3ee", hi: "#facc15" },
+  magenta: { a: "#ec4899", b: "#f97316", c: "#8b5cf6", hi: "#facc15" },
+  cyan:    { a: "#06b6d4", b: "#8b5cf6", c: "#ec4899", hi: "#a3e635" },
+  lime:    { a: "#65a30d", b: "#06b6d4", c: "#8b5cf6", hi: "#fde047" },
+};
+const FONT = '"Space Grotesk", system-ui, sans-serif';
+const cv = document.getElementById("c");
+const ctx = cv.getContext("2d");
+let W, H, S, T, TL, VIDEO, BRAND;
+
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const eOut = (k) => 1 - Math.pow(1 - clamp(k), 3);
+const eIn = (k) => Math.pow(clamp(k), 3);
+const eBack = (k) => { k = clamp(k); const c = 1.9; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+const rand = (i) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+window.setup = async (cfg) => {
+  ({ w: W, h: H } = cfg.format);
+  TL = cfg.timeline; VIDEO = cfg.video; BRAND = cfg.brand;
+  T = THEMES[VIDEO.theme] || THEMES.violet;
+  cv.width = W; cv.height = H;
+  S = (Math.min(W, H) / 1080) * (W > H ? 1.3 : 1);
+  await document.fonts.load(`700 40px "Space Grotesk"`);
+  await document.fonts.load(`500 40px "Space Grotesk"`);
+};
+
+/* ---------- text helpers ---------- */
+// "*word*" marks highlighted words.
+function tokens(text) {
+  const out = []; let hi = false;
+  for (const raw of text.split(/\s+/)) {
+    let w = raw, h = hi;
+    if (w.startsWith("*")) { h = true; w = w.slice(1); }
+    let end = false;
+    if (w.endsWith("*")) { end = true; w = w.slice(0, -1); }
+    else if (/\*[.,!?]$/.test(w)) { end = true; w = w.replace("*", ""); }
+    out.push({ w, hi: h });
+    hi = h && !end;
+  }
+  return out;
+}
+function layout(toks, size, maxW) {
+  ctx.font = `700 ${size}px ${FONT}`;
+  const space = ctx.measureText(" ").width;
+  const lines = [[]]; let x = 0;
+  for (const t of toks) {
+    const tw = ctx.measureText(t.w).width;
+    if (x > 0 && x + tw > maxW) { lines.push([]); x = 0; }
+    lines[lines.length - 1].push({ ...t, x, tw });
+    x += tw + space;
+  }
+  return lines.map((l) => ({ words: l, width: l.length ? l[l.length - 1].x + l[l.length - 1].tw : 0 }));
+}
+function fit(text, maxSize, maxW, maxLines) {
+  const toks = tokens(text);
+  let size = maxSize;
+  let lines = layout(toks, size, maxW);
+  while ((lines.length > maxLines || lines.some((l) => l.width > maxW)) && size > 20) { size *= 0.94; lines = layout(toks, size, maxW); }
+  return { size, lines };
+}
+// Kinetic text: words pop in one by one.
+function kinetic(text, cx, cy, lt, opts = {}) {
+  const { maxSize = 150 * S, maxW = W * 0.84, maxLines = 4, stagger = 0.11, slam = false, align = "center", alpha = 1 } = opts;
+  const { size, lines } = fit(text, maxSize, maxW, maxLines);
+  const lh = size * 1.05;
+  const top = cy - (lines.length * lh) / 2 + size * 0.8;
+  let i = 0;
+  ctx.textBaseline = "alphabetic";
+  lines.forEach((line, li) => {
+    const ox = align === "center" ? cx - line.width / 2 : cx;
+    for (const wd of line.words) {
+      const k = (lt - i * stagger) / 0.35; i++;
+      if (k <= 0) continue;
+      const p = slam ? eBack(k) : eOut(k);
+      const sc = slam ? lerp(1.9, 1, eOut(k)) : 1;
+      const dy = slam ? 0 : (1 - p) * size * 0.5;
+      const x = ox + wd.x + wd.tw / 2, y = top + li * lh + dy;
+      ctx.save();
+      ctx.globalAlpha = clamp(k * 2.5) * alpha;
+      ctx.translate(x, y - size * 0.35); ctx.scale(sc, sc); ctx.translate(-x, -(y - size * 0.35));
+      ctx.font = `700 ${size}px ${FONT}`;
+      if (wd.hi) {
+        const hk = eOut((k - 0.6) / 0.5);
+        ctx.fillStyle = T.hi;
+        roundRect(x - wd.tw / 2 - size * 0.1, y - size * 0.82, (wd.tw + size * 0.2) * hk, size * 1.0, size * 0.14); ctx.fill();
+        ctx.fillStyle = "#0b0b12";
+      } else ctx.fillStyle = "#fff";
+      ctx.shadowColor = "rgba(0,0,0,.25)"; ctx.shadowBlur = wd.hi ? 0 : 20 * S;
+      ctx.fillText(wd.w, x - wd.tw / 2, y);
+      ctx.restore();
+    }
+  });
+  return { size, height: lines.length * lh };
+}
+function roundRect(x, y, w, h, r) {
+  r = Math.min(r, h / 2, Math.abs(w) / 2);
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function label(text, x, y, size, color = "rgba(255,255,255,.85)", weight = 500, align = "center") {
+  ctx.font = `${weight} ${size}px ${FONT}`; ctx.fillStyle = color; ctx.textAlign = align; ctx.fillText(text, x, y); ctx.textAlign = "left";
+}
+
+/* ---------- background ---------- */
+function background(t) {
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  const sh = (Math.sin(t * 0.5) + 1) / 2;
+  g.addColorStop(0, T.a); g.addColorStop(lerp(0.45, 0.7, sh), T.b); g.addColorStop(1, "#0b0b12");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // drifting glow orbs
+  for (let i = 0; i < 4; i++) {
+    const r = (0.35 + rand(i) * 0.35) * Math.max(W, H);
+    const x = W * (rand(i + 9) + 0.15 * Math.sin(t * 0.4 + i * 2));
+    const y = H * (rand(i + 19) + 0.12 * Math.cos(t * 0.33 + i));
+    const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+    rg.addColorStop(0, i % 2 ? hexA(T.c, 0.35) : "rgba(255,255,255,.18)"); rg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+  }
+  // moving diagonal grid lines
+  ctx.save(); ctx.globalAlpha = 0.07; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2 * S;
+  const gap = 90 * S, off = (t * 40 * S) % gap;
+  for (let x = -H; x < W + H; x += gap) { ctx.beginPath(); ctx.moveTo(x + off, 0); ctx.lineTo(x + off - H * 0.6, H); ctx.stroke(); }
+  ctx.restore();
+  // particles
+  for (let i = 0; i < 40; i++) {
+    const sp = 0.03 + rand(i + 3) * 0.06;
+    const y = H - ((rand(i) * H + t * sp * H) % (H * 1.1));
+    const x = rand(i + 50) * W + Math.sin(t + i) * 10 * S;
+    ctx.fillStyle = `rgba(255,255,255,${0.15 + rand(i + 7) * 0.35})`;
+    ctx.beginPath(); ctx.arc(x, y, (1.5 + rand(i + 11) * 3.5) * S, 0, Math.PI * 2); ctx.fill();
+  }
+  // vignette
+  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.8);
+  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.45)");
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+}
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+
+function chrome(t, inCta) {
+  // brand watermark + progress bar
+  const pad = 56 * S;
+  const topY = H > W ? H * 0.075 : pad + 20 * S;
+  if (!inCta) {
+    ctx.font = `700 ${34 * S}px ${FONT}`; ctx.fillStyle = "rgba(255,255,255,.95)";
+    ctx.fillText("VYRAL", pad, topY);
+    const w1 = ctx.measureText("VYRAL ").width;
+    ctx.fillStyle = "rgba(255,255,255,.6)"; ctx.fillText("DISTRICT", pad + w1, topY);
+  }
+  const prog = clamp(t / TL.duration);
+  ctx.fillStyle = "rgba(255,255,255,.18)"; roundRect(pad, topY + 24 * S, W - pad * 2, 6 * S, 3 * S); ctx.fill();
+  ctx.fillStyle = "#fff"; roundRect(pad, topY + 24 * S, (W - pad * 2) * prog, 6 * S, 3 * S); ctx.fill();
+}
+
+/* ---------- scenes ---------- */
+// Content box: vertical video keeps clear of TikTok/Reels UI (bottom 22%, right rail).
+function box() {
+  if (H > W) return { cx: W * 0.47, cy: H * 0.45, w: W * 0.8 };
+  if (W > H) return { cx: W / 2, cy: H * 0.52, w: W * 0.72 };
+  return { cx: W / 2, cy: H * 0.52, w: W * 0.84 };
+}
+const SCENES = {
+  hook(sc, lt) {
+    const b = box();
+    const shake = lt < 0.4 ? (1 - lt / 0.4) * 14 * S : 0;
+    ctx.save(); ctx.translate(Math.sin(lt * 90) * shake, Math.cos(lt * 70) * shake);
+    kinetic(sc.text, b.cx, b.cy, lt, { maxSize: 175 * S, maxW: b.w, slam: true, stagger: 0.13, maxLines: 4 });
+    ctx.restore();
+    if (lt < 0.12) { ctx.fillStyle = `rgba(255,255,255,${0.5 * (1 - lt / 0.12)})`; ctx.fillRect(0, 0, W, H); }
+  },
+  line(sc, lt) {
+    const b = box();
+    kinetic(sc.text, b.cx, b.cy, lt, { maxSize: 112 * S, maxW: b.w, stagger: 0.08, maxLines: 5 });
+  },
+  counter(sc, lt) {
+    const b = box();
+    const k = eOut(lt / 1.1);
+    const val = Math.round(lerp(sc.from, sc.to, k));
+    const size = Math.min(340 * S * (H > W ? 1.2 : 1), H * 0.27, W * 0.38);
+    const pop = 1 + 0.12 * Math.max(0, 1 - Math.abs(lt - 1.1) / 0.2);
+    const main = `${sc.prefix}${sc.to}`; // measure final value so layout doesn't jump
+    ctx.font = `700 ${size}px ${FONT}`; const mw = ctx.measureText(main).width;
+    ctx.font = `700 ${size * 0.3}px ${FONT}`; const sw = sc.suffix ? ctx.measureText(sc.suffix).width + size * 0.35 : 0;
+    const R = Math.max(mw * 0.62, size * 0.62);
+    const mx = b.cx - sw / 2, my = b.cy - size * 0.3;
+    // ring
+    ctx.save(); ctx.strokeStyle = "rgba(255,255,255,.25)"; ctx.lineWidth = 10 * S;
+    ctx.beginPath(); ctx.arc(mx, my, R, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = T.hi; ctx.lineCap = "round"; ctx.beginPath(); ctx.arc(mx, my, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k); ctx.stroke();
+    ctx.restore();
+    ctx.save(); ctx.translate(mx, my); ctx.scale(pop, pop);
+    ctx.font = `700 ${size}px ${FONT}`; ctx.textAlign = "center"; ctx.fillStyle = "#fff";
+    ctx.shadowColor = hexA(T.hi, 0.6); ctx.shadowBlur = 60 * S;
+    ctx.fillText(`${sc.prefix}${val}`, 0, size * 0.36);
+    ctx.restore();
+    if (sc.suffix) { ctx.save(); ctx.font = `700 ${size * 0.3}px ${FONT}`; ctx.fillStyle = T.hi; ctx.globalAlpha = clamp((lt - 0.8) / 0.3); ctx.fillText(sc.suffix, mx + R + size * 0.15, my + size * 0.12); ctx.restore(); }
+    ctx.textAlign = "left";
+    kinetic(sc.label, b.cx, my + R + size * 0.45, lt - 0.6, { maxSize: 72 * S, maxW: b.w, stagger: 0.06, maxLines: 2 });
+  },
+  list(sc, lt) {
+    const b = box();
+    const n = sc.items.length;
+    const span = Math.max(0.6, (sc.voEnd - sc.voStart - 0.3) / n);
+    const tsize = 70 * S, isize = (H > W ? 78 : 66) * S, rowH = isize * 1.9;
+    const total = tsize * 1.6 + n * rowH;
+    let y = b.cy - total / 2;
+    kinetic(sc.title, b.cx, y + tsize * 0.4, lt, { maxSize: tsize, maxW: b.w, stagger: 0.05, maxLines: 1 });
+    y += tsize * 1.6;
+    sc.items.forEach((it, i) => {
+      const k = eBack((lt - 0.2 - i * span) / 0.4);
+      if (k <= 0) return;
+      const x = b.cx - b.w / 2 + (1 - k) * -W * 0.3;
+      ctx.save(); ctx.globalAlpha = clamp(k);
+      ctx.fillStyle = "rgba(11,11,18,.55)"; roundRect(x, y, b.w, rowH * 0.8, 26 * S); ctx.fill();
+      ctx.fillStyle = T.hi; roundRect(x, y, 12 * S, rowH * 0.8, 6 * S); ctx.fill();
+      ctx.font = `700 ${isize}px ${FONT}`; ctx.fillStyle = "#fff"; ctx.textBaseline = "middle";
+      let s = isize; while (ctx.measureText(it).width > b.w - 80 * S && s > 20) { s *= 0.95; ctx.font = `700 ${s}px ${FONT}`; }
+      ctx.fillText(it, x + 44 * S, y + rowH * 0.4); ctx.textBaseline = "alphabetic";
+      ctx.restore();
+      y += rowH;
+    });
+  },
+  chart(sc, lt) {
+    const b = box();
+    const n = sc.bars.length;
+    const ch = (H > W ? 0.36 : 0.42) * H, cw = b.w;
+    const tsize = (H > W ? 84 : 72) * S;
+    const top = b.cy - (ch + tsize * 2) / 2;
+    kinetic(sc.title, b.cx, top + tsize * 0.4, lt, { maxSize: tsize, maxW: b.w, stagger: 0.06, maxLines: 2 });
+    const base = top + tsize * 2 + ch;
+    const gap = cw * 0.06, bw = (cw - gap * (n - 1)) / n;
+    const span = Math.max(0.35, (sc.voEnd - sc.voStart - 0.4) / n);
+    const pts = [];
+    sc.bars.forEach((name, i) => {
+      const k = eOut((lt - 0.3 - i * span) / 0.6);
+      const target = ch * (0.25 + 0.75 * Math.pow((i + 1) / n, 1.6));
+      const h = target * k;
+      const x = b.cx - cw / 2 + i * (bw + gap);
+      const g = ctx.createLinearGradient(0, base - target, 0, base);
+      g.addColorStop(0, i === n - 1 ? T.hi : "#fff"); g.addColorStop(1, "rgba(255,255,255,.35)");
+      ctx.fillStyle = g; roundRect(x, base - h, bw, h, 18 * S); ctx.fill();
+      ctx.save(); ctx.globalAlpha = clamp(k * 2);
+      let ls = (n > 3 ? 34 : 42) * S; ctx.font = `700 ${ls}px ${FONT}`;
+      while (ctx.measureText(name).width > bw + gap * 0.8 && ls > 14) { ls *= 0.94; ctx.font = `700 ${ls}px ${FONT}`; }
+      label(name, x + bw / 2, base + ls * 1.4, ls, "#fff", 700);
+      ctx.restore();
+      pts.push([x + bw / 2, base - h - 30 * S, k]);
+    });
+    // trend arrow over the bars
+    const drawn = pts.filter((p) => p[2] > 0.05);
+    if (drawn.length > 1) {
+      ctx.save(); ctx.strokeStyle = T.hi; ctx.lineWidth = 9 * S; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.shadowColor = hexA(T.hi, 0.8); ctx.shadowBlur = 24 * S;
+      ctx.beginPath(); drawn.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
+      const [x2, y2] = drawn[drawn.length - 1], [x1, y1] = drawn[drawn.length - 2];
+      const ang = Math.atan2(y2 - y1, x2 - x1), L = 34 * S;
+      ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - L * Math.cos(ang - 0.5), y2 - L * Math.sin(ang - 0.5));
+      ctx.moveTo(x2, y2); ctx.lineTo(x2 - L * Math.cos(ang + 0.5), y2 - L * Math.sin(ang + 0.5)); ctx.stroke();
+      ctx.restore();
+    }
+  },
+  split(sc, lt) {
+    const vertical = H >= W;
+    const half = (sc.voEnd - sc.voStart) / 2;
+    const k1 = eOut(lt / 0.5), k2 = eOut((lt - half) / 0.5);
+    ctx.save();
+    if (vertical) {
+      ctx.fillStyle = "rgba(11,11,18,.45)"; ctx.fillRect(0, H * 0.5 - (1 - k2) * 0, W, H * 0.5 * k2);
+      ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.fillRect(W * 0.08, H * 0.5 - 3 * S, W * 0.84 * k2, 6 * S);
+      kinetic(sc.a, W * 0.47, H * 0.32, lt, { maxSize: 120 * S, maxW: W * 0.8, slam: true, maxLines: 3 });
+      kinetic(sc.b, W * 0.47, H * 0.62, lt - half, { maxSize: 120 * S, maxW: W * 0.8, slam: true, maxLines: 3 });
+    } else {
+      ctx.fillStyle = "rgba(11,11,18,.45)"; ctx.fillRect(W * 0.5, 0, W * 0.5 * k2, H);
+      ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.fillRect(W * 0.5 - 3 * S, H * 0.15, 6 * S, H * 0.7 * k2);
+      kinetic(sc.a, W * 0.25, H * 0.5, lt, { maxSize: 100 * S, maxW: W * 0.4, slam: true, maxLines: 4 });
+      kinetic(sc.b, W * 0.75, H * 0.5, lt - half, { maxSize: 100 * S, maxW: W * 0.4, slam: true, maxLines: 4 });
+    }
+    ctx.restore();
+  },
+  cta(sc, lt) {
+    const b0 = box();
+    const vertical = H > W;
+    const lsize = Math.min((vertical ? 120 : 110) * S, H * 0.11);
+    // block spans from cy - 2.6*lsize to cy + 1.25*lsize + 118*S + 100*S; recenter it
+    const top = -2.6 * lsize, bottom = 1.25 * lsize + 56 * S * 2.1 + 140 * S;
+    const b = { ...b0, cy: (H > W ? H * 0.47 : H * 0.5) - (top + bottom) / 2 };
+    // logo
+    const k = eBack(lt / 0.6);
+    ctx.save(); ctx.globalAlpha = clamp(lt / 0.3);
+    ctx.translate(b.cx, b.cy - lsize * 1.6); ctx.scale(lerp(0.6, 1, k), lerp(0.6, 1, k));
+    ctx.font = `700 ${lsize}px ${FONT}`; ctx.textAlign = "center"; ctx.fillStyle = "#fff";
+    ctx.shadowColor = "rgba(0,0,0,.3)"; ctx.shadowBlur = 30 * S;
+    ctx.fillText("VYRAL", 0, 0);
+    ctx.fillStyle = T.hi; ctx.fillText("DISTRICT", 0, lsize * 1.0);
+    ctx.restore(); ctx.textAlign = "left";
+    // tagline
+    ctx.save(); ctx.globalAlpha = clamp((lt - 0.4) / 0.4);
+    label("Social media growth · Paid growth", b.cx, b.cy + lsize * 0.35, 40 * S, "rgba(255,255,255,.9)", 500);
+    ctx.restore();
+    // CTA pill
+    const pk = eBack((lt - 0.7) / 0.5);
+    if (pk > 0) {
+      const pulse = 1 + 0.04 * Math.sin(Math.max(0, lt - 1.2) * 6);
+      const fs = 56 * S; ctx.font = `700 ${fs}px ${FONT}`;
+      const text = sc.cta + "  →"; const tw = ctx.measureText(text).width;
+      const pw = tw + fs * 1.6, ph = fs * 2.1;
+      ctx.save(); ctx.translate(b.cx, b.cy + lsize * 1.25 + ph / 2); ctx.scale(pk * pulse, pk * pulse);
+      ctx.shadowColor = hexA(T.hi, 0.6); ctx.shadowBlur = 50 * S;
+      ctx.fillStyle = "#0b0b12"; roundRect(-pw / 2, -ph / 2, pw, ph, ph / 2); ctx.fill();
+      ctx.shadowBlur = 0; ctx.strokeStyle = T.hi; ctx.lineWidth = 4 * S; ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.textBaseline = "middle"; ctx.fillText(text, -tw / 2, 2 * S); ctx.textBaseline = "alphabetic";
+      ctx.restore();
+    }
+    // handle + url + tags
+    ctx.save(); ctx.globalAlpha = clamp((lt - 1.1) / 0.4);
+    const yb = b.cy + lsize * 1.25 + 56 * S * 2.1 + 80 * S;
+    label(`${BRAND.handle}  ·  ${BRAND.url.replace(/^https?:\/\//, "")}`, b.cx, yb, 40 * S, "#fff", 700);
+    label(VIDEO.hashtags.slice(0, 3).join("  "), b.cx, yb + 58 * S, 34 * S, "rgba(255,255,255,.75)", 500);
+    ctx.restore();
+  },
+};
+
+window.drawFrame = (t) => {
+  ctx.clearRect(0, 0, W, H);
+  background(t);
+  const idx = TL.scenes.findIndex((s) => t >= s.start && t < s.end);
+  const sc = TL.scenes[idx === -1 ? TL.scenes.length - 1 : idx];
+  const lt = t - sc.start;
+  const out = sc.end - t; // exit animation for all but the last scene
+  const last = sc === TL.scenes[TL.scenes.length - 1];
+  ctx.save();
+  if (!last && out < 0.22) {
+    const k = eIn(1 - out / 0.22);
+    ctx.globalAlpha = 1 - k; ctx.translate(W / 2, H / 2); ctx.scale(1 + 0.15 * k, 1 + 0.15 * k); ctx.translate(-W / 2, -H / 2);
+  }
+  SCENES[sc.kind](sc, lt);
+  ctx.restore();
+  // wipe transition at each scene start
+  if (sc.start > 0 && lt < 0.28) {
+    const k = eOut(lt / 0.28);
+    ctx.save(); ctx.fillStyle = T.hi; ctx.globalAlpha = 0.9 * (1 - k);
+    ctx.beginPath(); const x = lerp(-W * 0.5, W * 1.5, k);
+    ctx.moveTo(x - W * 0.3, 0); ctx.lineTo(x + W * 0.1, 0); ctx.lineTo(x - W * 0.1, H); ctx.lineTo(x - W * 0.5, H); ctx.fill(); ctx.restore();
+  }
+  chrome(t, sc.kind === "cta");
+};
+</script>
+</body>
+</html>

@@ -123,3 +123,11 @@ footer { border-top: 1px solid var(--line); padding: 36px 0; color: var(--muted)
 footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 
 .speaking { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+/* video ads */
+.vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+.vcard { margin: 0; background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.vcard video { display: block; width: 100%; aspect-ratio: 9 / 16; background: #000; object-fit: cover; }
+.vcard figcaption { padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.vcard figcaption span { color: var(--muted); font-size: 13px; }
+.vcard figcaption a { color: var(--cyan); }

@@ -18,6 +18,7 @@
       <a href="#" class="vd-logo">VYRAL<b>DISTRICT</b></a>
       <div class="nav__links">
         <a href="#services">Services</a>
+        <a href="#videos">Video ads</a>
         <a href="#feed">Ads</a>
         <a href="#packages">Packages</a>
         <a href="studio.html">Ad Studio</a>
@@ -80,6 +81,14 @@
     </div>
   </section>
 
+  <section id="videos">
+    <div class="wrap">
+      <h2>Paid growth, <span class="grad">in motion.</span></h2>
+      <p class="sub">Video ads with voiceover for TikTok, Reels, Shorts, Stories, feeds, YouTube and X. Each one comes in 9:16, 1:1 and 16:9.</p>
+      <div class="vgrid" id="videoGrid"></div>
+    </div>
+  </section>
+
   <section id="feed" style="background:var(--bg2);border-block:1px solid var(--line)">
     <div class="wrap">
       <h2>The <span class="grad">feed.</span></h2>
@@ -127,6 +136,16 @@
       const data = await VD.loadData();
       const { brand, ads } = data;
       document.getElementById("postCount").textContent = ads.length;
+      fetch("data/videos.json").then((r) => r.json()).then((vs) => {
+        document.getElementById("videoGrid").innerHTML = vs.videos.map((v) => `
+          <figure class="vcard">
+            <video src="videos/out/${v.id}-9x16.mp4" poster="videos/out/${v.id}-9x16.jpg" controls playsinline preload="none"></video>
+            <figcaption><b>${v.title}</b>
+              <span>${["9x16", "1x1", "16x9"].map((f) => `<a href="videos/out/${v.id}-${f}.mp4" download>${f.replace("x", ":")}</a>`).join(" · ")}</span>
+            </figcaption>
+          </figure>`).join("");
+      });
+
       const grid = document.getElementById("feedGrid");
       grid.innerHTML = ads.map((ad) => `
         <article class="post" data-id="${ad.id}">

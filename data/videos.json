@@ -1,0 +1,75 @@
+{
+  "voice": { "engine": "kokoro", "voice": "am_michael", "speed": 1.08 },
+  "fps": 30,
+  "formats": {
+    "9x16": { "w": 1080, "h": 1920, "platforms": ["TikTok", "Instagram Reels", "Instagram Stories", "Facebook Reels", "Facebook Stories", "YouTube Shorts"] },
+    "1x1":  { "w": 1080, "h": 1080, "platforms": ["Instagram Feed", "Facebook Feed", "X / Twitter", "LinkedIn"] },
+    "16x9": { "w": 1920, "h": 1080, "platforms": ["YouTube In-Stream", "X / Twitter", "Facebook In-Stream", "LinkedIn"] }
+  },
+  "videos": [
+    {
+      "id": "pv-01",
+      "title": "Stop Boosting Posts",
+      "theme": "magenta",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#PaidGrowth", "#StopBoosting", "#TikTokAds", "#MetaAds"],
+      "scenes": [
+        { "kind": "hook", "text": "*STOP* boosting posts.", "vo": "Stop boosting posts." },
+        { "kind": "line", "text": "The boost button is the *most expensive* button on the app.", "vo": "The boost button is the most expensive button on the app." },
+        { "kind": "list", "title": "Boosting has:", "items": ["✕ No targeting", "✕ No testing", "✕ No plan"], "vo": "No targeting. No testing. No plan." },
+        { "kind": "chart", "title": "Real campaigns:", "bars": ["Target", "Test", "Scale"], "vo": "Real campaigns target the right people, test what works, and scale the winners." },
+        { "kind": "cta", "cta": "Get a real ad plan", "vo": "Vyral District. Get a real ad plan today." }
+      ]
+    },
+    {
+      "id": "pv-02",
+      "title": "$5 A Day, Done Right",
+      "theme": "violet",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#PaidAds", "#SmallBusinessMarketing", "#AdStrategy", "#ROAS"],
+      "scenes": [
+        { "kind": "counter", "prefix": "$", "from": 0, "to": 5, "suffix": "/day", "label": "That's all it takes to start.", "vo": "Five dollars a day. That's all it takes to start." },
+        { "kind": "hook", "text": "Done *right.*", "vo": "If it's done right." },
+        { "kind": "list", "title": "The play:", "items": ["① Launch 3 creatives", "② Keep the winner", "③ Kill the rest"], "vo": "Launch three creatives. Keep the winner. Kill the rest." },
+        { "kind": "chart", "title": "Then scale what *works.*", "bars": ["Wk 1", "Wk 2", "Wk 3", "Wk 4"], "vo": "Then put your budget behind what actually works." },
+        { "kind": "cta", "cta": "Launch your first campaign", "vo": "Launch your first campaign with Vyral District." }
+      ]
+    },
+    {
+      "id": "pv-03",
+      "title": "Organic + Paid",
+      "theme": "cyan",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#SocialMediaGrowth", "#PaidGrowth", "#OrganicGrowth", "#BrandGrowth"],
+      "scenes": [
+        { "kind": "split", "a": "Organic gets you *seen.*", "b": "Paid gets you *scaled.*", "vo": "Organic gets you seen. Paid gets you scaled." },
+        { "kind": "line", "text": "Most brands pick one.", "vo": "Most brands pick one." },
+        { "kind": "hook", "text": "Winners run *both.*", "vo": "The ones that win run both." },
+        { "kind": "list", "title": "One district:", "items": ["🌱 Content that builds fans", "🚀 Ads that scale reach", "📈 One growth plan"], "vo": "Content that builds fans. Ads that scale your reach. One growth plan." },
+        { "kind": "cta", "cta": "Book a strategy call", "vo": "Book your strategy call with Vyral District." }
+      ]
+    },
+    {
+      "id": "pv-04",
+      "title": "Your Best Post Needs A Budget",
+      "theme": "lime",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#SparkAds", "#PaidSocial", "#ContentCreator", "#GrowthMarketing"],
+      "scenes": [
+        { "kind": "hook", "text": "Your best post *did numbers.*", "vo": "Your best post did numbers." },
+        { "kind": "line", "text": "Now imagine it with a *budget* behind it.", "vo": "Now imagine it with a budget behind it." },
+        { "kind": "chart", "title": "Organic reach → *Paid reach*", "bars": ["Organic", "+ Spark Ads", "+ Retargeting", "+ Lookalikes"], "vo": "Spark ads. Retargeting. Lookalike audiences. Your winners, in front of the right people." },
+        { "kind": "cta", "cta": "Scale your winners", "vo": "Scale your winners with Vyral District." }
+      ]
+    },
+    {
+      "id": "pv-05",
+      "title": "Paid Growth In 3 Steps",
+      "theme": "violet",
+      "hashtags": ["#VyralDistrict", "#GoVyral", "#PaidGrowth", "#DigitalMarketing", "#PerformanceMarketing", "#MarketingTips"],
+      "scenes": [
+        { "kind": "hook", "text": "Paid growth in *3 steps.*", "vo": "Paid growth in three steps." },
+        { "kind": "counter", "prefix": "", "from": 0, "to": 1, "suffix": "", "label": "TARGET the right people", "vo": "One. Target the right people, not everyone." },
+        { "kind": "counter", "prefix": "", "from": 1, "to": 2, "suffix": "", "label": "TEST hooks, not hunches", "vo": "Two. Test hooks, not hunches." },
+        { "kind": "counter", "prefix": "", "from": 2, "to": 3, "suffix": "", "label": "SCALE what wins", "vo": "Three. Scale what wins." },
+        { "kind": "cta", "cta": "Join the District", "vo": "That's the system. Join the District." }
+      ]
+    }
+  ]
+}
