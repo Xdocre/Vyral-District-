@@ -106,19 +106,16 @@ async function main() {
   let state = { posted: [] };
   try { state = JSON.parse(await readFile(STATE, "utf8")); } catch {}
 
+  // Queue: the launch set (tips og-* alternated with pitches pv-*: tip, tip, pitch),
+  // then Claude-generated daily videos (d-*) in the order they were written.
+  // Videos are rendered on demand in CI, so the queue doesn't need the MP4 to exist yet.
+  const og = spec.videos.filter((v) => v.id.startsWith("og-")), pv = spec.videos.filter((v) => v.id.startsWith("pv-"));
   const ready = [];
-  for (const v of spec.videos) {
-    try { await stat(path.join(root, "videos", "out", `${v.id}-9x16.mp4`)); ready.push(v); } catch {}
-  }
-  // Alternate value tips (og-*) with paid-growth pitches (pv-*): TikTok rewards
-  // useful content, and a feed of nonstop pitches looks like an ad account.
-  const og = ready.filter((v) => v.id.startsWith("og-")), pv = ready.filter((v) => !v.id.startsWith("og-"));
-  ready.length = 0;
-  // Pattern: tip, tip, pitch, tip, tip, pitch, ...
   while (og.length || pv.length) {
     for (let k = 0; k < 2 && og.length; k++) ready.push(og.shift());
     if (pv.length) ready.push(pv.shift());
   }
+  ready.push(...spec.videos.filter((v) => v.id.startsWith("d-")));
   const done = new Set(state.posted.map((p) => p.id));
   let video = process.env.VIDEO_ID ? ready.find((v) => v.id === process.env.VIDEO_ID) : ready.find((v) => !done.has(v.id));
   if (!video) {
@@ -130,9 +127,12 @@ async function main() {
     state.posted = state.posted.filter((p) => p.id !== video.id);
   }
 
+  if (process.argv.includes("--next")) { console.log(video.id); return; } // used by CI to render just this one
+
   const file = path.join(root, "videos", "out", `${video.id}-9x16.mp4`);
+  try { await stat(file); } catch { throw new Error(`${video.id}-9x16.mp4 isn't rendered. Run: python3 videos/audio.py --only ${video.id} ... && node videos/render.mjs --only ${video.id} --format 9x16`); }
   const caption = tiktokCaption(video, brand);
-  console.log(`${LIVE ? "🔴 LIVE" : "🟡 DRY RUN"} — TikTok ${video.id} "${video.title}" (${ready.length - done.size - 1} left after this)\n${caption}\n`);
+  console.log(`${LIVE ? "🔴 LIVE" : "🟡 DRY RUN"} — TikTok ${video.id} "${video.title}" (${ready.filter((v) => !done.has(v.id)).length - 1} left in queue after this)\n${caption}\n`);
 
   const hasCreds = ["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET", "TIKTOK_REFRESH_TOKEN"].every((k) => process.env[k]);
   if (!LIVE) return;

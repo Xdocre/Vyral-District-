@@ -81,6 +81,23 @@ Every placement says it's an affiliate link (the FTC requires that), and the lin
 
 **The link is intentionally kept out of auto-posted captions, videos and paid ads.** TikTok, Instagram, Facebook, YouTube and X all ban promoting bought followers or engagement in posts. Ads that do it get rejected, and accounts that do it repeatedly can be restricted or banned. Posts send people to the bio page, and the bio page sends them on to the offer.
 
+## Daily TikTok content engine (fully automatic)
+
+This runs every day without anyone touching it:
+
+1. **About 4am ET: `daily-content.yml`.** Claude (`videos/generate.mjs`, Claude Opus 5.5 with structured JSON output) writes **3 new scripts**: 2 tips and 1 paid-growth pitch. Each follows the brand voice and includes the 3D platform follower scene. Claude is given the existing titles so it doesn't repeat ideas. The scripts are appended to `data/videos.json` and committed.
+2. **At each peak time: `tiktok.yml`.** It picks the next unposted video, renders it in 3D with voiceover on the GitHub runner (about 5–8 minutes), posts it to TikTok, and records it in `autopost/tiktok-state.json`.
+
+Daily videos aren't committed to git, so the repo doesn't grow by gigabytes. Each rendered video is kept as a workflow artifact for 30 days.
+
+Setup, in addition to the TikTok secrets below:
+
+- Add the secret `ANTHROPIC_API_KEY` (from console.anthropic.com). Each day's call costs a few cents.
+- Generation requests turn on Claude's server-side fallback (`fallbacks: "default"`). If a request is declined, the API retries it on a fallback model, so a single decline doesn't skip a day.
+- Test it: Actions → **Vyral District daily scripts** → Run workflow. Then Actions → **Vyral District TikTok posts** → Run workflow.
+
+To preview tomorrow's scripts without saving them, run `ANTHROPIC_API_KEY=... node videos/generate.mjs --dry-run`.
+
 ## TikTok auto-posting
 
 `.github/workflows/tiktok.yml` posts to your TikTok **3 times a day** at peak US engagement times (Eastern):
