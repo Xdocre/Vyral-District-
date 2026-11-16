@@ -94,7 +94,7 @@ h2 { font-size: clamp(30px, 4.5vw, 48px); margin: 0 0 12px; letter-spacing: -.02
 .vd-card__headline { position: relative; font-size: 10cqw; line-height: 1.02; letter-spacing: -.03em; margin: auto 0 4cqw; font-weight: 800; }
 .vd-card__body { position: relative; font-size: 4.4cqw; margin: 0 0 6cqw; opacity: .92; }
 .vd-card__foot { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 3cqw; }
-.vd-card__cta { font-weight: 800; font-size: 4.4cqw; background: #0b0b12; color: #fff; padding: .8em 1.3em; border-radius: 999px; }
+.vd-card__cta { white-space: nowrap; font-weight: 800; font-size: 4.4cqw; background: #0b0b12; color: #fff; padding: .8em 1.3em; border-radius: 999px; }
 .vd-card__handle { font-size: 3.4cqw; opacity: .8; white-space: nowrap; }
 
 /* studio */
